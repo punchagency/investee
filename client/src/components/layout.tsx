@@ -11,19 +11,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Home", icon: Building2 },
-    { href: "/search", label: "Find Deals", icon: Search },
-    // Analysis is usually accessed via a specific property, but we can have a generic link or just hide it from main nav
+    { href: "/search", label: "Get Quote", icon: Search },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/20 bg-background/98 backdrop-blur supports-[backdrop-filter]:bg-background/95">
         <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
-          <Link href="/" className="flex items-center gap-2 font-heading font-bold text-xl tracking-tight text-primary transition-colors hover:text-primary/90">
+          <Link href="/" className="flex items-center gap-2 font-heading font-bold text-lg tracking-tight text-primary transition-colors hover:text-primary/80">
               <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
                 <Building2 className="h-5 w-5" />
               </div>
-              <span>Legacy<span className="text-secondary-foreground/80">AI</span></span>
+              <span>Legacy<span className="text-secondary">Biz</span></span>
           </Link>
 
           {/* Desktop Nav */}
@@ -43,7 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
             <Link href="/dashboard">
-              <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+              <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
                 Dashboard
               </Button>
             </Link>
@@ -76,7 +75,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                   ))}
                    <Link href="/dashboard">
-                     <Button className="mt-4 w-full" onClick={() => setIsOpen(false)}>Dashboard</Button>
+                     <Button className="mt-4 w-full bg-primary hover:bg-primary/90 text-white font-semibold" onClick={() => setIsOpen(false)}>Dashboard</Button>
                    </Link>
                 </nav>
               </SheetContent>

@@ -1,8 +1,8 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, TrendingUp, ShieldCheck, Zap, Globe } from "lucide-react";
+import { ArrowRight, TrendingUp, ShieldCheck, Zap, Globe, Clock } from "lucide-react";
 import { motion } from "framer-motion";
-import heroImage from "@assets/generated_images/abstract_modern_architectural_visualization_with_data_streams.png";
+import heroImage from "@assets/generated_images/luxury_modern_kitchen_with_natural_lighting.png";
 
 export default function Landing() {
   return (
@@ -13,10 +13,10 @@ export default function Landing() {
         <div className="absolute inset-0 z-0">
           <img 
             src={heroImage} 
-            alt="Modern Architecture and Data" 
+            alt="Luxury home interior" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-primary/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
 
         <div className="container relative z-10 px-4 md:px-8 max-w-screen-2xl">
@@ -26,32 +26,23 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
             className="max-w-2xl"
           >
-            <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-6 backdrop-blur-sm">
-              <Zap className="mr-2 h-4 w-4" />
-              AI-Powered Commercial Real Estate
-            </div>
-            <h1 className="text-5xl md:text-7xl font-heading font-bold tracking-tight text-foreground mb-6">
-              The Future of <br/>
-              <span className="text-primary relative">
-                Deal Sourcing
-                <svg className="absolute w-full h-3 -bottom-1 left-0 text-secondary opacity-50" viewBox="0 0 100 10" preserveAspectRatio="none">
-                  <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
-                </svg>
-              </span>
+            <h1 className="text-5xl md:text-6xl font-heading font-bold tracking-tight text-white mb-6">
+              Business Purpose<br/>
+              Investment Mortgage
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 leading-relaxed max-w-lg">
-              Analyze DSCR and Fix & Flip deals instantly. Get funding quotes in seconds with our proprietary AI engine.
+            <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-lg">
+              As a specialty mortgage boutique lender we pride ourselves in educating our borrowers on every transaction to ensure a smooth, fast and efficient process.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/search">
-                <Button size="lg" className="text-lg h-12 px-8 shadow-xl shadow-primary/20 bg-primary text-primary-foreground hover:bg-primary/90">
-                  Find Properties
+                <Button size="lg" className="text-lg h-12 px-8 shadow-xl shadow-primary/30 bg-primary hover:bg-primary/90 text-white font-semibold">
+                  Get Your Quote
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/dashboard">
-                <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-background/50 backdrop-blur hover:bg-background/80">
-                  View Demo
+                <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-2 border-white bg-transparent text-white hover:bg-white/10 font-semibold">
+                  Get Preapproved
                 </Button>
               </Link>
             </div>
@@ -59,32 +50,54 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Welcome Section */}
+      <section className="py-16 bg-white">
+        <div className="container px-4 md:px-8 max-w-screen-2xl">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-6">
+              Welcome to Legacy Biz Capital
+            </h2>
+            <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
+              At Legacy Biz Capital we are direct lenders with a full lineup of business purpose program offerings. We offer investment mortgages as well as working capital solutions for business owners looking to fund their existing business, payroll deadlines or expansion projects.
+            </p>
+            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+              We specialize in Residential and Commercial Funding nationwide offering wholesale rates and fast service!
+            </p>
+            <Link href="/search">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
+                Get Started Today
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Features Grid */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-24 bg-muted/20">
         <div className="container px-4 md:px-8 max-w-screen-2xl">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-heading font-bold mb-4">Institutional-Grade Analysis</h2>
+            <h2 className="text-3xl font-heading font-bold mb-4 text-foreground">Why Choose Legacy Biz Capital</h2>
             <p className="text-muted-foreground text-lg">
-              Stop using spreadsheets. Our platform unifies search, analysis, and financing into a single workflow.
+              Whether you are a business purpose broker or real estate investor, having an experienced team you can count on is crucial.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                icon: Globe,
-                title: "Nationwide Coverage",
-                desc: "Access off-market inventory across 46 states, filtered by your specific investment criteria."
+                icon: Zap,
+                title: "Fast Funding",
+                desc: "Quick approvals and fast funding timelines to keep your deals moving forward."
               },
               {
-                icon: TrendingUp,
-                title: "Instant Analysis",
-                desc: "Real-time DSCR and Fix & Flip calculators that adjust dynamically as you tweak assumptions."
+                icon: Globe,
+                title: "Nationwide Coverage",
+                desc: "Commercial, Hotels, Automotive, Retail, Self-Storage, Mixed Use, and more across the US."
               },
               {
                 icon: ShieldCheck,
-                title: "Guaranteed Funding",
-                desc: "Pre-approved quotes generated alongside every property analysis. Close with confidence."
+                title: "Expert Support",
+                desc: "Direct lenders with wholesale rates and experienced teams ready to guide you through every step."
               }
             ].map((feature, i) => (
               <motion.div
@@ -93,15 +106,37 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-card p-8 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all"
+                className="bg-white p-8 rounded-lg border border-border shadow-sm hover:shadow-lg transition-all"
               >
-                <div className="h-12 w-12 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary-foreground mb-6">
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-6">
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                <h3 className="text-xl font-bold mb-3 text-foreground">{feature.title}</h3>
                 <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-primary text-white">
+        <div className="container px-4 md:px-8 max-w-screen-2xl text-center">
+          <h2 className="text-4xl font-heading font-bold mb-4">Ready to Get Started?</h2>
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+            Let our team of experts help you find the perfect financing solution for your investment goals.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/search">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg">
+                Get Your Quote
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-semibold">
+                Learn More
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
