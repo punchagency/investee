@@ -19,29 +19,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
-          <Link href="/">
-            <a className="flex items-center gap-2 font-heading font-bold text-xl tracking-tight text-primary transition-colors hover:text-primary/90">
+          <Link href="/" className="flex items-center gap-2 font-heading font-bold text-xl tracking-tight text-primary transition-colors hover:text-primary/90">
               <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
                 <Building2 className="h-5 w-5" />
               </div>
               <span>Legacy<span className="text-secondary-foreground/80">AI</span></span>
-            </a>
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <a
-                  className={cn(
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={cn(
                     "text-sm font-medium transition-colors hover:text-primary flex items-center gap-2",
                     location === item.href
                       ? "text-primary font-semibold"
                       : "text-muted-foreground"
                   )}
-                >
+              >
                   {item.label}
-                </a>
               </Link>
             ))}
             <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
@@ -60,19 +58,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <nav className="flex flex-col gap-4 mt-8">
                   {navItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <a
-                        onClick={() => setIsOpen(false)}
-                        className={cn(
+                    <Link 
+                      key={item.href} 
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
                           "text-lg font-medium transition-colors hover:text-primary flex items-center gap-3 px-2 py-1",
                           location === item.href
                             ? "text-primary font-semibold bg-secondary/20 rounded-md"
                             : "text-muted-foreground"
                         )}
-                      >
+                    >
                         <item.icon className="h-5 w-5" />
                         {item.label}
-                      </a>
                     </Link>
                   ))}
                    <Button className="mt-4 w-full">Dashboard</Button>

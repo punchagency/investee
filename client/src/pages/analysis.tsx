@@ -218,38 +218,42 @@ export default function AnalysisPage() {
                     {/* KPI Cards */}
                     {calcResult && (
                         <>
-                            <Card className={property.investmentType === "DSCR" ? "bg-card" : "hidden"}>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-muted-foreground">DSCR Ratio</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-4xl font-bold ${calcResult.dscr >= 1.1 ? "text-green-600" : "text-red-500"}`}>
-                                            {calcResult.dscr}x
-                                        </span>
-                                        <Badge variant={calcResult.dscr >= 1.1 ? "default" : "destructive"}>
-                                            {calcResult.status.toUpperCase()}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-2">Min req: 1.10x</p>
-                                </CardContent>
-                            </Card>
+                            {property.investmentType === "DSCR" && (
+                              <Card>
+                                  <CardHeader className="pb-2">
+                                      <CardTitle className="text-sm font-medium text-muted-foreground">DSCR Ratio</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                      <div className="flex items-baseline gap-2">
+                                          <span className={`text-4xl font-bold ${calcResult.dscr >= 1.1 ? "text-green-600" : "text-red-500"}`}>
+                                              {calcResult.dscr}x
+                                          </span>
+                                          <Badge variant={calcResult.dscr >= 1.1 ? "default" : "destructive"}>
+                                              {calcResult.status?.toUpperCase() || "N/A"}
+                                          </Badge>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-2">Min req: 1.10x</p>
+                                  </CardContent>
+                              </Card>
+                            )}
 
-                             <Card className={property.investmentType === "Fix & Flip" ? "bg-card" : "hidden"}>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium text-muted-foreground">Projected ROI</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-4xl font-bold ${calcResult.roi >= 20 ? "text-green-600" : "text-yellow-500"}`}>
-                                            {calcResult.roi}%
-                                        </span>
-                                        <Badge variant="outline" className="uppercase">
-                                            {calcResult.verdict}
-                                        </Badge>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            {property.investmentType === "Fix & Flip" && (
+                              <Card>
+                                  <CardHeader className="pb-2">
+                                      <CardTitle className="text-sm font-medium text-muted-foreground">Projected ROI</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                      <div className="flex items-baseline gap-2">
+                                          <span className={`text-4xl font-bold ${calcResult.roi >= 20 ? "text-green-600" : "text-yellow-500"}`}>
+                                              {calcResult.roi}%
+                                          </span>
+                                          <Badge variant="outline" className="uppercase">
+                                              {calcResult.verdict}
+                                          </Badge>
+                                      </div>
+                                  </CardContent>
+                              </Card>
+                            )}
                         </>
                     )}
                     
