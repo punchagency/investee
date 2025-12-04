@@ -5,24 +5,29 @@ import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, TrendingUp, Home, Hammer } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import luxury1 from "@assets/stock_images/modern_luxury_home_e_a045d88b.jpg";
-import luxury2 from "@assets/stock_images/modern_luxury_home_e_985c0b6e.jpg";
-import luxury3 from "@assets/stock_images/modern_luxury_home_e_6d9e842b.jpg";
-import apartment1 from "@assets/stock_images/apartment_building_r_5c601a4a.jpg";
-import apartment2 from "@assets/stock_images/apartment_building_r_b454f1b8.jpg";
-import commercial1 from "@assets/stock_images/commercial_retail_bu_42c502e5.jpg";
-import commercial2 from "@assets/stock_images/commercial_retail_bu_b7d25c8b.jpg";
 
-const propertyImages = [luxury1, luxury2, luxury3, apartment1, apartment2, commercial1, commercial2];
+// DSCR Rental Properties - Well-maintained, turnkey
+import dscr1 from "@assets/stock_images/rental_property_apar_495de18b.jpg";
+import dscr2 from "@assets/stock_images/rental_property_apar_66527c4c.jpg";
+import dscr3 from "@assets/stock_images/rental_property_apar_8e1f2e7e.jpg";
+
+// Fix & Flip Properties - Fixer uppers needing work
+import fixflip1 from "@assets/stock_images/fixer_upper_house_re_05fbbfad.jpg";
+import fixflip2 from "@assets/stock_images/fixer_upper_house_re_0bd8e163.jpg";
+import fixflip3 from "@assets/stock_images/fixer_upper_house_re_1ed060ca.jpg";
+
+const dscrImages = [dscr1, dscr2, dscr3];
+const fixFlipImages = [fixflip1, fixflip2, fixflip3];
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  // Use property ID to consistently pick the same image for each property
-  const imageIndex = property.id % propertyImages.length;
-  const propertyImage = propertyImages[imageIndex];
+  // Select images based on property type
+  const imagePool = property.investmentType === "DSCR" ? dscrImages : fixFlipImages;
+  const imageIndex = property.id % imagePool.length;
+  const propertyImage = imagePool[imageIndex];
 
   return (
     <motion.div
