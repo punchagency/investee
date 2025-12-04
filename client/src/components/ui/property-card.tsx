@@ -5,12 +5,25 @@ import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, TrendingUp, Home, Hammer } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import luxury1 from "@assets/stock_images/modern_luxury_home_e_a045d88b.jpg";
+import luxury2 from "@assets/stock_images/modern_luxury_home_e_985c0b6e.jpg";
+import luxury3 from "@assets/stock_images/modern_luxury_home_e_6d9e842b.jpg";
+import apartment1 from "@assets/stock_images/apartment_building_r_5c601a4a.jpg";
+import apartment2 from "@assets/stock_images/apartment_building_r_b454f1b8.jpg";
+import commercial1 from "@assets/stock_images/commercial_retail_bu_42c502e5.jpg";
+import commercial2 from "@assets/stock_images/commercial_retail_bu_b7d25c8b.jpg";
+
+const propertyImages = [luxury1, luxury2, luxury3, apartment1, apartment2, commercial1, commercial2];
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
+  // Use property ID to consistently pick the same image for each property
+  const imageIndex = property.id % propertyImages.length;
+  const propertyImage = propertyImages[imageIndex];
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -18,10 +31,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
     >
       <Card className="overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300 bg-card group h-full flex flex-col">
         <div className="relative h-48 bg-muted overflow-hidden">
-            {/* Placeholder for property image - in a real app this would be dynamic */}
-            <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground/30">
-               <Home className="w-16 h-16 opacity-20" />
-            </div>
+            <img 
+              src={propertyImage} 
+              alt={property.address}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
             
             {/* Overlay Gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
