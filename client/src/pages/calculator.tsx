@@ -69,7 +69,46 @@ export default function Calculator() {
   };
 
   const handleSubmit = () => {
-    alert(`✅ Application Submitted!\n\n${formData.firstName}, your loan application has been received.\n\nWe'll review your scenario and contact you at ${formData.email} within 24 hours with a personalized quote.\n\nLoan Amount: $${(formData.purchasePrice - formData.downPayment).toLocaleString()}\nProperty Type: ${formData.propertyType}\n\nThank you for choosing Legacy Biz Capital!`);
+    // Create application object
+    const application = {
+      id: Date.now(),
+      submittedAt: new Date().toISOString(),
+      formData,
+      documents: files,
+      loanAmount: formData.purchasePrice - formData.downPayment,
+    };
+
+    // Save to localStorage
+    const existing = JSON.parse(localStorage.getItem("loanApplications") || "[]");
+    existing.push(application);
+    localStorage.setItem("loanApplications", JSON.stringify(existing));
+
+    // Mock email send
+    const emailContent = `
+      TO: ${formData.email}
+      FROM: noreply@legacybizcapital.com
+      SUBJECT: Loan Application Received - Legacy Biz Capital
+      
+      Hi ${formData.firstName},
+      
+      We've received your loan application! Here are the details:
+      
+      Loan Type: ${formData.loanType}
+      Property Type: ${formData.propertyType}
+      Loan Amount: $${(formData.purchasePrice - formData.downPayment).toLocaleString()}
+      Documents Uploaded: ${files.length}
+      
+      Our team will review your application and contact you within 24 hours.
+      
+      Best regards,
+      Legacy Biz Capital Team
+    `;
+    
+    console.log("📧 MOCK EMAIL SENT:", emailContent);
+    console.log("💾 Application saved to localStorage:", application);
+
+    alert(`✅ Application Submitted!\n\n${formData.firstName}, your loan application has been received.\n\n📧 Confirmation email sent to ${formData.email}\n\n💾 Application saved locally\n\nLoan Amount: $${(formData.purchasePrice - formData.downPayment).toLocaleString()}\nProperty Type: ${formData.propertyType}\nDocuments: ${files.length} uploaded\n\nOur team will contact you within 24 hours.\n\nThank you for choosing Legacy Biz Capital!`);
+    
     setStep(1);
     setFiles([]);
     setFormData({
