@@ -7,6 +7,8 @@ import Landing from "@/pages/landing";
 import SearchPage from "@/pages/search";
 import AnalysisPage from "@/pages/analysis";
 import DashboardPage from "@/pages/dashboard";
+import CalculatorPage from "@/pages/calculator";
+import LearningPage from "@/pages/learning";
 import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
 
@@ -17,6 +19,8 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/search" component={SearchPage} />
         <Route path="/analysis/:id" component={AnalysisPage} />
+        <Route path="/calculator" component={CalculatorPage} />
+        <Route path="/learning" component={LearningPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/terms" component={LegalPage} />
         <Route path="/privacy" component={LegalPage} />

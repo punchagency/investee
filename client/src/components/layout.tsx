@@ -12,7 +12,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Home", icon: Building2 },
-    { href: "/search", label: "Get Quote", icon: Search },
+    { href: "/calculator", label: "Calculator", icon: Search },
+    { href: "/learning", label: "Learn", icon: Search },
   ];
 
   return (
