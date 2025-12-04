@@ -1,0 +1,50 @@
+Product Requirements Document (PRD)
+1. Project Overview
+Project Name: AI-Driven Real Estate Investment Platform
+Owner: Cynthia G / Legacy
+Collaborators: Punch Team (Verdi, Rasheq, Thomasin, Oguniomi), Sherry
+Document Date: 2025-12-04
+First Check-In Version
+
+2. Background & Goals
+Investors face fragmented workflows in sourcing, analyzing, and financing investment properties. This project aims to create a seamless, AI-powered platform where investors can search properties, analyze deals, and access loan products directly, reducing reliance on realtors and loan officers.
+
+Goals:
+All-in-one property sourcing, analysis, and financing experience.
+AI guidance via chatbot support for both novice and experienced investors.
+Automated quote and loan application flows with document upload.
+Actionable data: Real-time analytics, tax info, and projected returns.
+Scalable marketing/data capture for user retention and future outreach.
+3. User Stories
+As an investor, I want to search for investment properties by criteria (location, type, rehab need), so I can quickly find suitable opportunities.
+As an investor, I want to analyze cash flow and loan scenarios with built-in DSCR/fix & flip calculators.
+As a user, I want AI assistance through chat to answer questions or recommend properties.
+As a borrower, I want to apply for a loan and upload documents online, or request human support if needed.
+As Cynthia/team, I want captured leads and data (with user consent) for remarketing.
+4. Key Features (Phase 1)
+Property database integration (e.g., with Zillow)
+AI chatbot (“AI Cynthia”) for property, process, and credit Q&A
+Deal analysis calculators tailored for DSCR and fix & flip scenarios
+Automated quote generation and loan application initiation
+Secure document upload for borrowers
+Consent-based data collection for marketing
+Admin dashboard for team workflow/support
+Landing pages, content/blog integration, and calendar bookings
+5. Technical Considerations
+Modular back end for property data, calculators, and user management
+API integration for property data, credit checks, and loan submission
+Scalable AI/LLM deployment for chat features
+Compliance for data privacy and credit handling
+Responsive, branded UI/UX as per team design standards
+6. Roadmap & Priorities
+Rapid prototyping: AI flows, calculators, chatbot experience
+User journey mapping and wireframes (property–>quote–>application–>support)
+Design polish and branding (Design Lead)
+MVP engineering (2 engineers, led by Thomasin)
+Parallel: Marketing content prep and landing page/booking setup
+7. Success Metrics (MVP)
+Time from landing to quote/application (user flow efficiency)
+% of users engaging with AI chatbot
+Number of successful applications & uploads
+Marketing CTR/lead conversion rates
+User feedback (usability, confidence, support)
