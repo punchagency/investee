@@ -45,8 +45,8 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
-  --font-sans: "Inter", sans-serif;
-  --font-heading: "Outfit", sans-serif;
+  --font-sans: "Poppins", sans-serif;
+  --font-heading: "Poppins", sans-serif;
   
   --radius: 0.5rem;
 }
