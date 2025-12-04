@@ -1,0 +1,709 @@
+Use this as your Replit “super starter” prompt for a full‑stack React + Node demo. Paste it into the Replit AI or follow it yourself as a scaffold.
+
+---
+
+## 1. Backend (Node/Express) starter
+
+Create `server/index.js`:
+
+```js
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// --- Demo in‑memory "database" of properties ---
+const demoProperties = [
+  {
+    id: 1,
+    address: "1234 Market St, Philadelphia, PA",
+    state: "PA",
+    investmentType: "DSCR", // or "Fix & Flip"
+    purchasePrice: 350000,
+    estRent: 3200,
+    taxes: 350,
+    insurance: 120,
+    rehab: 0,
+    rehabType: null,
+  },
+  {
+    id: 2,
+    address: "18 W Main St, Atlanta, GA",
+    state: "GA",
+    investmentType: "Fix & Flip",
+    purchasePrice: 240000,
+    estARV: 340000,
+    rehab: 60000,
+    taxes: 280,
+    insurance: 100,
+    rehabType: "Heavy",
+  },
+  {
+    id: 3,
+    address: "902 Brickell Ave, Miami, FL",
+    state: "FL",
+    investmentType: "DSCR",
+    purchasePrice: 480000,
+    estRent: 4200,
+    taxes: 420,
+    insurance: 150,
+    rehab: 0,
+    rehabType: null,
+  },
+];
+
+// Excluded states: NV, AZ, UT, OR
+const EXCLUDED_STATES = ["NV", "AZ", "UT", "OR"];
+
+// --- Routes ---
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", service: "legacy-ai-demo" });
+});
+
+// Property search (mock AI matching)
+app.post("/api/properties/search", (req, res) => {
+  const { investmentType, state, rehabType } = req.body || {};
+
+  let results = demoProperties.filter((p) => !EXCLUDED_STATES.includes(p.state));
+
+  if (investmentType) {
+    results = results.filter((p) => p.investmentType === investmentType);
+  }
+
+  if (state) {
+    results = results.filter((p) => p.state === state);
+  }
+
+  if (rehabType && investmentType === "Fix & Flip") {
+    results = results.filter(
+      (p) => !p.rehabType || p.rehabType === rehabType
+    );
+  }
+
+  res.json({ properties: results });
+});
+
+// DSCR calculator (simplified)
+app.post("/api/calc/dscr", (req, res) => {
+  const { loanAmount, interestRate, termYears, rent, taxes, insurance } =
+    req.body || {};
+
+  if (!loanAmount || !interestRate || !termYears || !rent) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const monthlyRate = interestRate / 100 / 12;
+  const n = termYears * 12;
+  const pAndI =
+    (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, n)) /
+    (Math.pow(1 + monthlyRate, n) - 1);
+
+  const monthlyDebt = pAndI + (taxes || 0) + (insurance || 0);
+  const dscr = rent / monthlyDebt;
+
+  res.json({
+    pAndI: Math.round(pAndI),
+    monthlyDebt: Math.round(monthlyDebt),
+    dscr: Number(dscr.toFixed(2)),
+    status: dscr >= 1.1 ? "pass" : "fail",
+  });
+});
+
+// Fix & Flip calculator (simplified)
+app.post("/api/calc/fixflip", (req, res) => {
+  const { purchasePrice, rehabBudget, arv, holdingMonths, monthlyCosts } =
+    req.body || {};
+
+  if (!purchasePrice || !rehabBudget || !arv) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const totalBasis = purchasePrice + rehabBudget;
+  const totalHolding = (monthlyCosts || 0) * (holdingMonths || 6);
+  const profit = arv - totalBasis - totalHolding;
+  const roi = (profit / totalBasis) * 100;
+
+  let verdict = "marginal";
+  if (roi > 20) verdict = "strong";
+  else if (roi < 10) verdict = "weak";
+
+  res.json({
+    totalBasis,
+    totalHolding,
+    profit,
+    roi: Number(roi.toFixed(1)),
+    verdict,
+  });
+});
+
+// Quote generation (mock)
+app.post("/api/quote", (req, res) => {
+  const { propertyId, investmentType, downPaymentPercent = 20 } =
+    req.body || {};
+
+  const property = demoProperties.find((p) => p.id === propertyId);
+  if (!property) {
+    return res.status(404).json({ error: "Property not found" });
+  }
+
+  const purchasePrice = property.purchasePrice;
+  const loanAmount = purchasePrice * (1 - downPaymentPercent / 100);
+
+  const isDSCR = investmentType === "DSCR";
+  const rate = isDSCR ? 9.25 : 11.5;
+  const termYears = isDSCR ? 30 : 1;
+
+  res.json({
+    propertyId,
+    loanAmount: Math.round(loanAmount),
+    interestRate: rate,
+    termYears,
+    productType: isDSCR ? "DSCR Rental" : "Fix & Flip",
+    estClosingCosts: Math.round(loanAmount * 0.03),
+  });
+});
+
+// Fake "submit application"
+app.post("/api/applications", (req, res) => {
+  const { name, email, phone, entityType, propertyId } = req.body || {};
+  if (!name || !email) {
+    return res.status(400).json({ error: "Missing name or email" });
+  }
+
+  res.json({
+    status: "received",
+    dealId: `DEAL-${Math.floor(Math.random() * 100000)}`,
+    assignedTo: "Legacy Capital Provider (demo)",
+    propertyId,
+    applicant: { name, email, phone, entityType },
+  });
+});
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Legacy AI demo backend listening on port ${PORT}`);
+});
+```
+
+Add to `server/package.json`:
+
+```json
+{
+  "name": "legacy-ai-demo-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
+```
+
+---
+
+## 2. Frontend (React) starter
+
+In `src/App.jsx`:
+
+```jsx
+import React, { useState } from "react";
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+
+function App() {
+  const [page, setPage] = useState("landing"); // landing | search | analysis | application
+  const [investmentType, setInvestmentType] = useState("DSCR");
+  const [stateFilter, setStateFilter] = useState("PA");
+  const [rehabType, setRehabType] = useState("Cosmetic");
+  const [properties, setProperties] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [quote, setQuote] = useState(null);
+  const [dscrResult, setDscrResult] = useState(null);
+  const [flipResult, setFlipResult] = useState(null);
+
+  const searchProperties = async () => {
+    const res = await fetch(`${API_BASE}/api/properties/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        investmentType,
+        state: stateFilter,
+        rehabType: investmentType === "Fix & Flip" ? rehabType : undefined,
+      }),
+    });
+    const data = await res.json();
+    setProperties(data.properties || []);
+    setSelectedProperty(null);
+    setDscrResult(null);
+    setFlipResult(null);
+    setQuote(null);
+    setPage("search");
+  };
+
+  const generateQuote = async () => {
+    if (!selectedProperty) return;
+    const res = await fetch(`${API_BASE}/api/quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        propertyId: selectedProperty.id,
+        investmentType,
+        downPaymentPercent: 20,
+      }),
+    });
+    const data = await res.json();
+    setQuote(data);
+  };
+
+  const runDscrCalc = async () => {
+    if (!selectedProperty || !quote) return;
+    const res = await fetch(`${API_BASE}/api/calc/dscr`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        loanAmount: quote.loanAmount,
+        interestRate: quote.interestRate,
+        termYears: quote.termYears,
+        rent: selectedProperty.estRent || 0,
+        taxes: selectedProperty.taxes || 0,
+        insurance: selectedProperty.insurance || 0,
+      }),
+    });
+    const data = await res.json();
+    setDscrResult(data);
+  };
+
+  const runFlipCalc = async () => {
+    if (!selectedProperty) return;
+    const res = await fetch(`${API_BASE}/api/calc/fixflip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        purchasePrice: selectedProperty.purchasePrice,
+        rehabBudget: selectedProperty.rehab || 0,
+        arv: selectedProperty.estARV || selectedProperty.purchasePrice,
+        holdingMonths: 6,
+        monthlyCosts: 1200,
+      }),
+    });
+    const data = await res.json();
+    setFlipResult(data);
+  };
+
+  const Landing = () => (
+    <div className="page landing">
+      <h1>Legacy AI Commercial Investment Portal (Demo)</h1>
+      <p>
+        Source investment properties, analyze DSCR or Fix &amp; Flip deals, and
+        generate funding quotes in one place.
+      </p>
+      <button onClick={searchProperties}>Start Deal Search</button>
+      <p style={{ marginTop: 16, fontSize: 12 }}>
+        Coverage demo: United States (excluding NV, AZ, UT, OR).
+      </p>
+    </div>
+  );
+
+  const SearchPage = () => (
+    <div className="page search">
+      <div className="sidebar">
+        <h2>Deal Filters</h2>
+        <label>
+          Investment Type
+          <select
+            value={investmentType}
+            onChange={(e) => setInvestmentType(e.target.value)}
+          >
+            <option value="DSCR">DSCR Rental</option>
+            <option value="Fix & Flip">Fix &amp; Flip</option>
+          </select>
+        </label>
+
+        <label>
+          State
+          <select
+            value={stateFilter}
+            onChange={(e) => setStateFilter(e.target.value)}
+          >
+            <option value="PA">PA</option>
+            <option value="GA">GA</option>
+            <option value="FL">FL</option>
+            <option value="TX">TX</option>
+          </select>
+        </label>
+
+        {investmentType === "Fix & Flip" && (
+          <label>
+            Rehab Type
+            <select
+              value={rehabType}
+              onChange={(e) => setRehabType(e.target.value)}
+            >
+              <option value="Cosmetic">Cosmetic</option>
+              <option value="Heavy">Heavy</option>
+              <option value="Ground-up">Ground-up</option>
+            </select>
+          </label>
+        )}
+
+        <button onClick={searchProperties}>Find Properties</button>
+        <button onClick={() => setPage("landing")}>Back to Landing</button>
+      </div>
+
+      <div className="content">
+        <h2>AI‑Recommended Matches</h2>
+        {properties.length === 0 && <p>No properties found for this filter.</p>}
+        <div className="property-list">
+          {properties.map((p) => (
+            <div
+              key={p.id}
+              className={`property-card ${
+                selectedProperty?.id === p.id ? "selected" : ""
+              }`}
+              onClick={() => {
+                setSelectedProperty(p);
+                setPage("analysis");
+              }}
+            >
+              <h3>{p.address}</h3>
+              <p>
+                Type: {p.investmentType} | Purchase: $
+                {p.purchasePrice.toLocaleString()}
+              </p>
+              {p.estRent && <p>Est. Rent: ${p.estRent.toLocaleString()}</p>}
+              {p.estARV && <p>Est. ARV: ${p.estARV.toLocaleString()}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const AnalysisPage = () => {
+    if (!selectedProperty) {
+      return (
+        <div className="page analysis">
+          <p>Select a property from the search page first.</p>
+          <button onClick={() => setPage("search")}>Back to Search</button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="page analysis">
+        <div className="top-bar">
+          <button onClick={() => setPage("search")}>← Back to Results</button>
+        </div>
+
+        <div className="analysis-layout">
+          <div className="property-summary">
+            <h2>Deal Analysis</h2>
+            <h3>{selectedProperty.address}</h3>
+            <p>Purchase Price: ${selectedProperty.purchasePrice.toLocaleString()}</p>
+            {selectedProperty.estRent && (
+              <p>Est. Monthly Rent: ${selectedProperty.estRent.toLocaleString()}</p>
+            )}
+            {selectedProperty.estARV && (
+              <p>Est. ARV: ${selectedProperty.estARV.toLocaleString()}</p>
+            )}
+            {selectedProperty.rehab > 0 && (
+              <p>Rehab Budget: ${selectedProperty.rehab.toLocaleString()}</p>
+            )}
+
+            <button onClick={generateQuote}>Generate Quote</button>
+            {quote && (
+              <div className="quote-card">
+                <h4>Quote Summary (Demo)</h4>
+                <p>Product: {quote.productType}</p>
+                <p>Loan Amount: ${quote.loanAmount?.toLocaleString()}</p>
+                <p>
+                  Rate / Term: {quote.interestRate}% • {quote.termYears} years
+                </p>
+                <p>
+                  Est. Closing Costs: $
+                  {quote.estClosingCosts?.toLocaleString()}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="calculators">
+            {investmentType === "DSCR" && (
+              <div className="card">
+                <h3>DSCR Calculator (Demo)</h3>
+                <button
+                  disabled={!quote}
+                  onClick={runDscrCalc}
+                >
+                  Run DSCR Using This Quote
+                </button>
+                {dscrResult && (
+                  <div className="result">
+                    <p>P&amp;I: ${dscrResult.pAndI.toLocaleString()}</p>
+                    <p>
+                      Total Monthly Debt: $
+                      {dscrResult.monthlyDebt.toLocaleString()}
+                    </p>
+                    <p>DSCR: {dscrResult.dscr}</p>
+                    <p>Status: {dscrResult.status}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {investmentType === "Fix & Flip" && (
+              <div className="card">
+                <h3>Fix &amp; Flip Profit Calculator (Demo)</h3>
+                <button onClick={runFlipCalc}>Run Deal Analysis</button>
+                {flipResult && (
+                  <div className="result">
+                    <p>Total Basis: ${flipResult.totalBasis.toLocaleString()}</p>
+                    <p>
+                      Total Holding Costs: $
+                      {flipResult.totalHolding.toLocaleString()}
+                    </p>
+                    <p>Profit: ${flipResult.profit.toLocaleString()}</p>
+                    <p>ROI: {flipResult.roi}%</p>
+                    <p>Verdict: {flipResult.verdict}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="card">
+              <h3>Next Step</h3>
+              <p>
+                When you like the quote and deal metrics, continue to submit the
+                deal to Legacy.
+              </p>
+              <button onClick={() => setPage("application")}>
+                Continue to Application
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ApplicationPage = () => {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [entityType, setEntityType] = useState("LLC");
+    const [status, setStatus] = useState(null);
+
+    const submitApp = async () => {
+      const res = await fetch(`${API_BASE}/api/applications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          entityType,
+          propertyId: selectedProperty?.id,
+        }),
+      });
+      const data = await res.json();
+      setStatus(data);
+    };
+
+    return (
+      <div className="page application">
+        <button onClick={() => setPage("analysis")}>← Back to Analysis</button>
+        <h2>Deal Submission (Demo)</h2>
+
+        <div className="form">
+          <label>
+            Name
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>
+            Email
+            <input value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label>
+            Entity Type
+            <select
+              value={entityType}
+              onChange={(e) => setEntityType(e.target.value)}
+            >
+              <option value="LLC">LLC</option>
+              <option value="Individual">Individual</option>
+              <option value="Corp">Corporation</option>
+            </select>
+          </label>
+
+          <h4>Required Documents (Demo)</h4>
+          <ul>
+            <li>Government ID</li>
+            <li>Bank Statements</li>
+            <li>Entity Docs (if LLC/Corp)</li>
+          </ul>
+
+          <button onClick={submitApp}>Submit to Legacy</button>
+        </div>
+
+        {status && (
+          <div className="card">
+            <h3>Submission Received</h3>
+            <p>Deal ID: {status.dealId}</p>
+            <p>Assigned To: {status.assignedTo}</p>
+            <p>Status: {status.status}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="app">
+      {page === "landing" && <Landing />}
+      {page === "search" && <SearchPage />}
+      {page === "analysis" && <AnalysisPage />}
+      {page === "application" && <ApplicationPage />}
+    </div>
+  );
+}
+
+export default App;
+```
+
+Minimal `src/main.jsx` (Vite):
+
+```jsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./styles.css";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+```
+
+---
+
+## 3. Basic styling (optional quick pass)
+
+`src/styles.css`:
+
+```css
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.app {
+  padding: 24px;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+button {
+  background: #22c55e;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #0f172a;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+button:disabled {
+  background: #64748b;
+  cursor: not-allowed;
+}
+
+.sidebar {
+  width: 260px;
+  padding-right: 24px;
+  border-right: 1px solid #1f2937;
+}
+
+.content {
+  flex: 1;
+  padding-left: 24px;
+}
+
+.search {
+  display: flex;
+}
+
+.property-list {
+  display: grid;
+  gap: 12px;
+}
+
+.property-card {
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  background: #020617;
+}
+
+.property-card.selected {
+  border-color: #22c55e;
+}
+
+.analysis-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+.card,
+.quote-card {
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  background: #020617;
+  margin-top: 12px;
+}
+
+.form label {
+  display: block;
+  margin: 8px 0;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 4px;
+  border-radius: 4px;
+  border: 1px solid #1f2937;
+  background: #020617;
+  color: #e5e7eb;
+}
+```
+
+---
+
+## 4. Wiring in Replit
+
+Prompt Replit (or follow manually):
+
+> Create a full-stack Replit app with:
+> - backend: Node + Express in `/server` using the code above on port 4000
+> - frontend: React (Vite) in `/client` using the code above
+> - a dev script that runs both concurrently (or two separate Replit tabs)
+> - set `VITE_API_BASE` in the client to `http://localhost:4000` (or the Replit URL)
+
+Once that’s running, you can iterate visually in Design Mode on top of this flow.
