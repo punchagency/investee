@@ -39,18 +39,20 @@ export default function Calculator() {
   };
 
   const handleNext = () => {
-    // Validate required fields
-    if (step === 7 && formData.firstName === "") {
-      alert("Please enter your first name");
-      return;
-    }
-    if (step === 7 && formData.email === "") {
-      alert("Please enter your email");
-      return;
-    }
-    if (step === 8 && !formData.agreeTerms) {
-      alert("Please agree to the terms and conditions");
-      return;
+    // Validate required fields on Step 8 (final contact info)
+    if (step === 8) {
+      if (formData.firstName === "") {
+        alert("Please enter your first name");
+        return;
+      }
+      if (formData.email === "") {
+        alert("Please enter your email");
+        return;
+      }
+      if (!formData.agreeTerms) {
+        alert("Please agree to the terms and conditions");
+        return;
+      }
     }
     if (step < 8) setStep(step + 1);
   };
