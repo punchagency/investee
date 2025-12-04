@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,9 @@ export default function Calculator() {
     const file = e.target.files?.[0];
     if (file) {
       setFiles([...files, file.name]);
+      toast.success(`Document uploaded: ${file.name}`, {
+        description: "Your document is ready for submission",
+      });
     }
   };
 
@@ -106,6 +110,10 @@ export default function Calculator() {
     
     console.log("📧 MOCK EMAIL SENT:", emailContent);
     console.log("💾 Application saved to localStorage:", application);
+
+    toast.success("Application submitted successfully!", {
+      description: `Confirmation email sent to ${formData.email}`,
+    });
 
     alert(`✅ Application Submitted!\n\n${formData.firstName}, your loan application has been received.\n\n📧 Confirmation email sent to ${formData.email}\n\n💾 Application saved locally\n\nLoan Amount: $${(formData.purchasePrice - formData.downPayment).toLocaleString()}\nProperty Type: ${formData.propertyType}\nDocuments: ${files.length} uploaded\n\nOur team will contact you within 24 hours.\n\nThank you for choosing Legacy Biz Capital!`);
     
