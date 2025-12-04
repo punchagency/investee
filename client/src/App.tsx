@@ -6,6 +6,8 @@ import { Layout } from "@/components/layout";
 import Landing from "@/pages/landing";
 import SearchPage from "@/pages/search";
 import AnalysisPage from "@/pages/analysis";
+import DashboardPage from "@/pages/dashboard";
+import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +17,9 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/search" component={SearchPage} />
         <Route path="/analysis/:id" component={AnalysisPage} />
+        <Route path="/dashboard" component={DashboardPage} />
+        <Route path="/terms" component={LegalPage} />
+        <Route path="/privacy" component={LegalPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

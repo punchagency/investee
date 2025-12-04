@@ -49,9 +49,11 @@ export default function Landing() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-background/50 backdrop-blur hover:bg-background/80">
-                View Demo
-              </Button>
+              <Link href="/dashboard">
+                <Button size="lg" variant="outline" className="text-lg h-12 px-8 bg-background/50 backdrop-blur hover:bg-background/80">
+                  View Demo
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>

@@ -42,9 +42,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
               </Link>
             ))}
-            <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
-              Dashboard
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+                Dashboard
+              </Button>
+            </Link>
           </nav>
 
           {/* Mobile Nav */}
@@ -73,7 +75,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         {item.label}
                     </Link>
                   ))}
-                   <Button className="mt-4 w-full">Dashboard</Button>
+                   <Link href="/dashboard">
+                     <Button className="mt-4 w-full" onClick={() => setIsOpen(false)}>Dashboard</Button>
+                   </Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -91,8 +95,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Built with <span className="font-semibold">Legacy AI</span>. The future of commercial real estate investment.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-             <a href="#" className="hover:underline">Terms</a>
-             <a href="#" className="hover:underline">Privacy</a>
+             <Link href="/terms"><a className="hover:underline">Terms</a></Link>
+             <Link href="/privacy"><a className="hover:underline">Privacy</a></Link>
           </div>
         </div>
       </footer>
