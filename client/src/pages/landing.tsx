@@ -31,7 +31,7 @@ export default function Landing() {
               Investment Mortgage Lender
             </h1>
             <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-lg">
-              As a specialty mortgage boutique lender we pride ourselves in educating our borrowers on every transaction to ensure a smooth, fast and efficient process.
+              Direct lenders who actually understand real estate investing. Fast approvals, transparent rates, and a team that gets it.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/search">
@@ -55,13 +55,13 @@ export default function Landing() {
         <div className="container px-4 md:px-8 max-w-screen-2xl">
           <div className="max-w-3xl">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-6">
-              Welcome to Legacy Biz Capital
+              Financing Built for Investors Like You
             </h2>
             <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
-              At Legacy Biz Capital we are direct lenders with a full lineup of business purpose program offerings. We offer investment mortgages as well as working capital solutions for business owners looking to fund their existing business, payroll deadlines or expansion projects.
+              Whether you're scaling your rental portfolio, flipping your next deal, or building your investment business, Legacy Biz Capital has the financing solutions you need. We work directly with investors nationwide because we understand the opportunities you're chasing.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              We specialize in Residential and Commercial Funding nationwide offering wholesale rates and fast service!
+              From residential rentals to commercial properties—hotels, retail, self-storage, and more—we offer wholesale rates and funding speed that keeps your deals moving.
             </p>
             <Link href="/search">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
@@ -76,9 +76,9 @@ export default function Landing() {
       <section className="py-24 bg-muted/20">
         <div className="container px-4 md:px-8 max-w-screen-2xl">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-heading font-bold mb-4 text-foreground">Why Choose Legacy Biz Capital</h2>
+            <h2 className="text-3xl font-heading font-bold mb-4 text-foreground">Why Investors Choose Us</h2>
             <p className="text-muted-foreground text-lg">
-              Whether you are a business purpose broker or real estate investor, having an experienced team you can count on is crucial.
+              We're not just another lender. We're partners who understand your deals and want to see you win.
             </p>
           </div>
 
@@ -86,18 +86,18 @@ export default function Landing() {
             {[
               {
                 icon: Zap,
-                title: "Fast Funding",
-                desc: "Quick approvals and fast funding timelines to keep your deals moving forward."
+                title: "Close Faster",
+                desc: "Get pre-approved and funded in days, not months. We know time is money in real estate."
               },
               {
                 icon: Globe,
-                title: "Nationwide Coverage",
-                desc: "Commercial, Hotels, Automotive, Retail, Self-Storage, Mixed Use, and more across the US."
+                title: "All Property Types",
+                desc: "Rentals, flips, commercial, hotels, self-storage—we fund the deals other lenders pass on."
               },
               {
                 icon: ShieldCheck,
-                title: "Expert Support",
-                desc: "Direct lenders with wholesale rates and experienced teams ready to guide you through every step."
+                title: "Wholesale Rates",
+                desc: "Direct lender pricing without the broker markup. More cash back in your pocket."
               }
             ].map((feature, i) => (
               <motion.div
@@ -122,9 +122,9 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="py-16 bg-primary text-white">
         <div className="container px-4 md:px-8 max-w-screen-2xl text-center">
-          <h2 className="text-4xl font-heading font-bold mb-4">Ready to Get Started?</h2>
+          <h2 className="text-4xl font-heading font-bold mb-4">Ready to Fund Your Next Deal?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Let our team of experts help you find the perfect financing solution for your investment goals.
+            Get a quote in minutes. No surprises, no games—just straightforward financing for serious investors.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/search">
