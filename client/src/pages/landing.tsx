@@ -28,7 +28,7 @@ export default function Landing() {
           >
             <h1 className="text-5xl md:text-6xl font-heading font-bold tracking-tight text-white mb-6">
               Business Purpose<br/>
-              Investment Mortgage
+              Investment Mortgage Lender
             </h1>
             <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-lg">
               As a specialty mortgage boutique lender we pride ourselves in educating our borrowers on every transaction to ensure a smooth, fast and efficient process.
