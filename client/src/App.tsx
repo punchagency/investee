@@ -11,6 +11,8 @@ import CalculatorPage from "@/pages/calculator";
 import LearningPage from "@/pages/learning";
 import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
+import AdminDashboard from "@/pages/admin-dashboard";
+import LoanDetailPage from "@/pages/loan-detail";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
         <Route path="/calculator" component={CalculatorPage} />
         <Route path="/learning" component={LearningPage} />
         <Route path="/dashboard" component={DashboardPage} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/loan/:id" component={LoanDetailPage} />
         <Route path="/terms" component={LegalPage} />
         <Route path="/privacy" component={LegalPage} />
         <Route component={NotFound} />
