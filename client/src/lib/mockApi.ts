@@ -39,80 +39,83 @@ export interface FixFlipResult {
   verdict: "strong" | "marginal" | "weak";
 }
 
+// --- ATTOM API Types ---
+export interface AttomProperty {
+  identifier: {
+    obPropId: number;
+    attomId: number;
+    apn: string;
+  };
+  address: {
+    oneLine: string;
+    line1: string;
+    locality: string;
+    postal1: string;
+    country: string;
+  };
+  location: {
+    latitude: string;
+    longitude: string;
+  };
+  building: {
+    size: {
+      universalsize: number;
+    };
+    rooms: {
+      beds: number;
+      bathstotal: number;
+    };
+  };
+  summary: {
+    propclass: string;
+    yearbuilt: number;
+  };
+  avm: {
+    amount: {
+      value: number;
+    };
+  };
+}
+
 // --- Mock Data ---
-const demoProperties: Property[] = [
+// Mock ATTOM API Response
+const mockAttomData: AttomProperty[] = [
   {
-    id: 1,
-    address: "1234 Market St, Philadelphia, PA",
-    state: "PA",
-    investmentType: "DSCR",
-    purchasePrice: 350000,
-    estRent: 3200,
-    taxes: 350,
-    insurance: 120,
-    rehab: 0,
-    rehabType: null,
+    identifier: { obPropId: 10001, attomId: 51294247, apn: "064443" },
+    address: { oneLine: "1234 Market St, Philadelphia, PA 19107", line1: "1234 Market St", locality: "Philadelphia", postal1: "19107", country: "US" },
+    location: { latitude: "39.9526", longitude: "-75.1652" },
+    building: { size: { universalsize: 1800 }, rooms: { beds: 3, bathstotal: 2 } },
+    summary: { propclass: "Residential", yearbuilt: 1950 },
+    avm: { amount: { value: 350000 } }
   },
   {
-    id: 2,
-    address: "18 W Main St, Atlanta, GA",
-    state: "GA",
-    investmentType: "Fix & Flip",
-    purchasePrice: 240000,
-    estARV: 340000,
-    rehab: 60000,
-    taxes: 280,
-    insurance: 100,
-    rehabType: "Heavy",
+    identifier: { obPropId: 10002, attomId: 51294248, apn: "064444" },
+    address: { oneLine: "18 W Main St, Atlanta, GA 30303", line1: "18 W Main St", locality: "Atlanta", postal1: "30303", country: "US" },
+    location: { latitude: "33.7490", longitude: "-84.3880" },
+    building: { size: { universalsize: 1200 }, rooms: { beds: 2, bathstotal: 1 } },
+    summary: { propclass: "Residential", yearbuilt: 1940 },
+    avm: { amount: { value: 240000 } }
   },
   {
-    id: 3,
-    address: "902 Brickell Ave, Miami, FL",
-    state: "FL",
-    investmentType: "DSCR",
-    purchasePrice: 480000,
-    estRent: 4200,
-    taxes: 420,
-    insurance: 150,
-    rehab: 0,
-    rehabType: null,
+    identifier: { obPropId: 10003, attomId: 51294249, apn: "064445" },
+    address: { oneLine: "902 Brickell Ave, Miami, FL 33131", line1: "902 Brickell Ave", locality: "Miami", postal1: "33131", country: "US" },
+    location: { latitude: "25.7743", longitude: "-80.1937" },
+    building: { size: { universalsize: 2500 }, rooms: { beds: 4, bathstotal: 3 } },
+    summary: { propclass: "Condo", yearbuilt: 2010 },
+    avm: { amount: { value: 480000 } }
   },
   {
-    id: 4,
-    address: "4500 San Jacinto St, Dallas, TX",
-    state: "TX",
-    investmentType: "DSCR",
-    purchasePrice: 290000,
-    estRent: 2800,
-    taxes: 400,
-    insurance: 110,
-    rehab: 15000,
-    rehabType: "Cosmetic",
-  },
-  {
-    id: 5,
-    address: "77 Peachtree Pl, Atlanta, GA",
-    state: "GA",
-    investmentType: "Fix & Flip",
-    purchasePrice: 180000,
-    estARV: 290000,
-    rehab: 55000,
-    taxes: 220,
-    insurance: 90,
-    rehabType: "Heavy",
-  },
-  {
-    id: 6,
-    address: "2020 Liberty Ave, Pittsburgh, PA",
-    state: "PA",
-    investmentType: "Fix & Flip",
-    purchasePrice: 120000,
-    estARV: 210000,
-    rehab: 45000,
-    taxes: 150,
-    insurance: 80,
-    rehabType: "Cosmetic",
+    identifier: { obPropId: 10004, attomId: 51294250, apn: "064446" },
+    address: { oneLine: "4500 San Jacinto St, Dallas, TX 75204", line1: "4500 San Jacinto St", locality: "Dallas", postal1: "75204", country: "US" },
+    location: { latitude: "32.7767", longitude: "-96.7970" },
+    building: { size: { universalsize: 1600 }, rooms: { beds: 3, bathstotal: 2 } },
+    summary: { propclass: "Residential", yearbuilt: 1980 },
+    avm: { amount: { value: 290000 } }
   }
+];
+
+const demoProperties: Property[] = [
+  // ... mapped from attom data in search function ...
 ];
 
 const EXCLUDED_STATES = ["NV", "AZ", "UT", "OR"];
@@ -121,6 +124,13 @@ const EXCLUDED_STATES = ["NV", "AZ", "UT", "OR"];
 // Simulate network delay with helper
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Mock ATTOM API Call
+export async function fetchAttomProperties(): Promise<AttomProperty[]> {
+  await delay(800); // Simulate API call latency
+  console.log("Connecting to ATTOM API (Mock)...");
+  return mockAttomData;
+}
+
 export async function searchProperties(filters: {
   investmentType?: string;
   state?: string;
@@ -128,9 +138,35 @@ export async function searchProperties(filters: {
 }) {
   await delay(600);
   
-  const { investmentType, state, rehabType } = filters;
-  let results = demoProperties.filter((p) => !EXCLUDED_STATES.includes(p.state));
+  // Fetch from "ATTOM" (mock)
+  const attomData = await fetchAttomProperties();
+  
+  // Map ATTOM data to our app's Property type (Adapter Pattern)
+  const mappedProperties: Property[] = attomData.map(attom => {
+    // Determine investment type based on some logic or random for demo
+    const isFixFlip = attom.summary.yearbuilt < 1960; 
+    
+    return {
+      id: attom.identifier.obPropId,
+      address: attom.address.oneLine,
+      state: attom.address.postal1.substring(0, 2) === "19" ? "PA" : 
+             attom.address.postal1.substring(0, 2) === "30" ? "GA" :
+             attom.address.postal1.substring(0, 2) === "33" ? "FL" : "TX", // Simple mapping for demo
+      investmentType: isFixFlip ? "Fix & Flip" : "DSCR",
+      purchasePrice: attom.avm.amount.value,
+      estRent: Math.round(attom.avm.amount.value * 0.008), // Rule of thumb
+      estARV: isFixFlip ? Math.round(attom.avm.amount.value * 1.4) : undefined,
+      taxes: Math.round(attom.avm.amount.value * 0.012 / 12),
+      insurance: 100,
+      rehab: isFixFlip ? 50000 : 0,
+      rehabType: isFixFlip ? "Heavy" : null,
+    };
+  });
 
+  let results = mappedProperties.filter((p) => !EXCLUDED_STATES.includes(p.state));
+
+  const { investmentType, state, rehabType } = filters;
+  
   if (investmentType) {
     results = results.filter((p) => p.investmentType === investmentType);
   }
