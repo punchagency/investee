@@ -27,22 +27,22 @@ export default function Landing() {
             className="max-w-2xl"
           >
             <h1 className="text-5xl md:text-6xl font-heading font-bold tracking-tight text-white mb-6">
-              Business Purpose<br/>
-              Investment Mortgage Lender
+              The Marketplace for<br/>
+              Investment Loans
             </h1>
             <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-lg">
-              Direct lenders who actually understand real estate investing. Fast approvals, transparent rates, and a team that gets it.
+              Compare rates from top lenders like Legacy Biz Capital and more. One application, multiple offers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/search">
+              <Link href="/calculator">
                 <Button size="lg" className="text-lg h-12 px-8 shadow-xl shadow-primary/30 bg-primary hover:bg-primary/90 text-white font-semibold">
-                  Get Your Quote
+                  Compare Rates
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/search">
                 <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-2 border-white bg-transparent text-white hover:bg-white/10 font-semibold">
-                  Get Preapproved
+                  Find Properties
                 </Button>
               </Link>
             </div>
@@ -55,17 +55,17 @@ export default function Landing() {
         <div className="container px-4 md:px-8 max-w-screen-2xl">
           <div className="max-w-3xl">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-6">
-              Financing Built for Investors Like You
+              Lenders Compete, You Win
             </h2>
             <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
-              Whether you're scaling your rental portfolio, flipping your next deal, or building your investment business, Legacy Biz Capital has the financing solutions you need. We work directly with investors nationwide because we understand the opportunities you're chasing.
+              Whether you're scaling your rental portfolio, flipping your next deal, or building your investment business, Investee connects you with the best financing solutions. We work with a network of verified lenders because we believe you deserve choices.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              From residential rentals to commercial properties—hotels, retail, self-storage, and more—we offer wholesale rates and funding speed that keeps your deals moving.
+              From residential rentals to commercial properties—hotels, retail, self-storage, and more—we help you find wholesale rates and funding speed that keeps your deals moving.
             </p>
-            <Link href="/search">
+            <Link href="/calculator">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
-                Get Started Today
+                Start Your Request
               </Button>
             </Link>
           </div>
@@ -76,9 +76,9 @@ export default function Landing() {
       <section className="py-24 bg-muted/20">
         <div className="container px-4 md:px-8 max-w-screen-2xl">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-heading font-bold mb-4 text-foreground">Why Investors Choose Us</h2>
+            <h2 className="text-3xl font-heading font-bold mb-4 text-foreground">Why Investors Choose Investee</h2>
             <p className="text-muted-foreground text-lg">
-              We're not just another lender. We're partners who understand your deals and want to see you win.
+              We're not a bank. We're a marketplace that puts you in control.
             </p>
           </div>
 
@@ -86,18 +86,18 @@ export default function Landing() {
             {[
               {
                 icon: Zap,
-                title: "Close Faster",
-                desc: "Get pre-approved and funded in days, not months. We know time is money in real estate."
+                title: "Compare & Save",
+                desc: "Get multiple quotes from top lenders instantly. Investors save an average of 0.5% on rates."
               },
               {
                 icon: Globe,
-                title: "All Property Types",
-                desc: "Rentals, flips, commercial, hotels, self-storage—we fund the deals other lenders pass on."
+                title: "Vetted Network",
+                desc: "We only work with proven lenders who understand DSCR, Fix & Flip, and commercial deals."
               },
               {
                 icon: ShieldCheck,
-                title: "Wholesale Rates",
-                desc: "Direct lender pricing without the broker markup. More cash back in your pocket."
+                title: "One Application",
+                desc: "Stop filling out endless forms. Submit your deal once and let lenders compete for your business."
               }
             ].map((feature, i) => (
               <motion.div
@@ -124,15 +124,15 @@ export default function Landing() {
         <div className="container px-4 md:px-8 max-w-screen-2xl text-center">
           <h2 className="text-4xl font-heading font-bold mb-4">Ready to Fund Your Next Deal?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Get a quote in minutes. No surprises, no games—just straightforward financing for serious investors.
+            One application. Multiple offers. No credit impact to check rates.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/search">
+            <Link href="/calculator">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg">
-                Get Your Quote
+                Get Your Quotes
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/learning">
               <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 font-semibold">
                 Learn More
               </Button>

@@ -13,17 +13,17 @@ interface Message {
 }
 
 const mockResponses: { [key: string]: string } = {
-  "dscr": "DSCR (Debt Service Coverage Ratio) loans are perfect for rental properties. We typically look for a minimum 1.1x DSCR. The loan amount depends on the property's rental income relative to the mortgage payment. Want to know your estimated DSCR? I can help analyze a property!",
-  "fix and flip": "Fix & Flip financing is designed for investors looking to purchase, renovate, and resell properties. We typically offer 6-12 month terms with competitive rates. The loan is based on the after-repair value (ARV) of the property. What's your target property type?",
-  "rate": "Our rates vary based on loan type and market conditions. DSCR loans typically range from 6.5-8.5%, while Fix & Flip loans range from 9.5-12%. Get an instant quote by analyzing a property in our system!",
-  "preapproved": "Getting pre-approved is easy! We'll need basic info about your deal, credit score range, and property details. Pre-approval typically takes 24-48 hours. Ready to start? Just answer a few questions about your investment strategy!",
-  "portfolio": "Managing a rental portfolio? We can help! Whether it's cash-out refinances, portfolio loans, or scaling your holdings nationwide, we've got solutions. How many properties are you currently managing?",
-  "commercial": "We fund residential and commercial properties nationwide—apartments, hotels, retail, self-storage, and mixed-use properties. What type of commercial property are you interested in?",
-  "hello": "Hey! Welcome to Legacy Biz Capital. I'm here to help you understand our financing options for DSCR rentals, Fix & Flip deals, and more. What type of investment are you working on?",
-  "hi": "Hey there! 👋 Ready to fund your next deal? Ask me about DSCR loans, Fix & Flip financing, or get pre-approved today!",
-  "how long": "Funding timelines depend on the loan type. For DSCR loans, we typically close in 15-21 days with full documentation. Fix & Flip deals can close as fast as 10-14 days. Speed is one of our core strengths!",
-  "qualification": "We work with investors of all levels. Key factors: credit score (typically 620+), experience in real estate, and a solid deal. Ready for a quote? Tell me about your property!",
-  "default": "Great question! I'm here to help with info about DSCR loans, Fix & Flip financing, rates, pre-approval, commercial properties, and more. What can I help you with today?",
+  "dscr": "DSCR (Debt Service Coverage Ratio) loans are perfect for rental properties. Our lender network typically looks for a minimum 1.1x DSCR. The loan amount depends on the property's rental income relative to the mortgage payment. Want to see which lenders fit your deal?",
+  "fix and flip": "Fix & Flip financing is designed for investors looking to purchase, renovate, and resell properties. Lenders on Investee offer 6-12 month terms with competitive rates. What's your target property type?",
+  "rate": "Rates vary by lender and market conditions. DSCR loans typically range from 6.5-8.5%, while Fix & Flip loans range from 9.5-12%. You can compare real quotes from multiple lenders by starting an application!",
+  "preapproved": "Getting pre-approved with multiple lenders is easy! We'll need basic info about your deal, credit score range, and property details. Ready to start and see your options?",
+  "portfolio": "Managing a rental portfolio? Our partners can help! Whether it's cash-out refinances, portfolio loans, or scaling your holdings nationwide, we have capital providers for every strategy. How many properties are you currently managing?",
+  "commercial": "Our network funds residential and commercial properties nationwide—apartments, hotels, retail, self-storage, and mixed-use properties. What type of commercial property are you interested in?",
+  "hello": "Hey! Welcome to Investee. I'm here to help you find the best financing from our marketplace of lenders. What type of investment are you working on?",
+  "hi": "Hey there! 👋 Ready to compare rates? Ask me about DSCR loans, Fix & Flip financing, or get matched with lenders today!",
+  "how long": "Funding timelines depend on the lender. Some partners close in as little as 10-14 days. We'll highlight the fastest lenders when you search. Speed is key!",
+  "qualification": "We work with investors of all levels. Key factors: credit score (typically 620+), experience in real estate, and a solid deal. Ready to see who will fund your deal?",
+  "default": "Great question! I'm here to help with info about DSCR loans, Fix & Flip financing, rates, and connecting you with our lender network. What can I help you with today?",
 };
 
 function getBotResponse(userMessage: string): string {
@@ -61,7 +61,7 @@ export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Hi! 👋 I'm your Legacy Biz Capital assistant. Ask me anything about DSCR loans, Fix & Flip financing, or getting pre-approved today!",
+      text: "Hi! 👋 I'm your Investee assistant. Ask me anything about DSCR loans, Fix & Flip financing, or comparing rates from multiple lenders!",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -129,8 +129,8 @@ export function ChatBot() {
             {/* Header */}
             <div className="bg-primary text-white p-4 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-lg">Legacy Biz Capital</h3>
-                <p className="text-xs text-primary/80">AI Assistant • Always here to help</p>
+                <h3 className="font-semibold text-lg">Investee</h3>
+                <p className="text-xs text-primary/80">Marketplace Assistant • Always here to help</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
