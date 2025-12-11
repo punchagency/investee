@@ -22,8 +22,6 @@ export default function Calculator() {
     estimatedValue: 300000,
     downPayment: 60000,
     creditScore: "700-739",
-    employment: "employed",
-    annualIncome: 100000,
     firstName: "",
     lastName: "",
     email: "",
@@ -34,14 +32,14 @@ export default function Calculator() {
     preferredCallTime: "morning",
   });
 
-  const progress = (step / 8) * 100;
+  const progress = (step / 7) * 100;
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleNext = () => {
-    if (step === 8) {
+    if (step === 7) {
       if (formData.firstName === "") {
         toast.error("Please enter your first name");
         return;
@@ -55,7 +53,7 @@ export default function Calculator() {
         return;
       }
     }
-    if (step < 8) setStep(step + 1);
+    if (step < 7) setStep(step + 1);
   };
 
   const handlePrev = () => {
@@ -364,43 +362,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 4: Employment & Income */}
+            {/* Step 4: Credit Score */}
             {step === 4 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">Employment Status</Label>
-                  <Select value={formData.employment} onValueChange={(v) => updateField("employment", v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employed">Employed</SelectItem>
-                      <SelectItem value="self-employed">Self-Employed</SelectItem>
-                      <SelectItem value="retired">Retired</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Annual Household Income</Label>
-                  <Select value={formData.annualIncome.toString()} onValueChange={(v) => updateField("annualIncome", parseInt(v))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="75000">Less than $75,000</SelectItem>
-                      <SelectItem value="100000">$75,000 - $100,000</SelectItem>
-                      <SelectItem value="150000">$100,000 - $150,000</SelectItem>
-                      <SelectItem value="200000">$150,000 - $200,000</SelectItem>
-                      <SelectItem value="300000">$200,000+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 5: Credit Score */}
-            {step === 5 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <Label className="text-base font-semibold">Credit Score Range</Label>
                 <div className="space-y-3">
@@ -427,8 +390,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 6: Review */}
-            {step === 6 && (
+            {/* Step 5: Review */}
+            {step === 5 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <div className="bg-muted rounded-lg p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -452,10 +415,6 @@ export default function Calculator() {
                       <p className="text-sm text-muted-foreground">Credit Score</p>
                       <p className="font-semibold text-lg">{formData.creditScore}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Annual Income</p>
-                      <p className="font-semibold text-lg">${formData.annualIncome.toLocaleString()}</p>
-                    </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground text-center py-4">
@@ -464,8 +423,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 7: Document Upload */}
-            {step === 7 && (
+            {/* Step 6: Document Upload */}
+            {step === 6 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-4 block">Upload Supporting Documents</Label>
@@ -502,8 +461,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 8: Contact Info & Lead Capture */}
-            {step === 8 && (
+            {/* Step 7: Contact Info & Lead Capture */}
+            {step === 7 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -620,7 +579,7 @@ export default function Calculator() {
             Back
           </Button>
 
-          {step === 8 ? (
+          {step === 7 ? (
             <Button
               size="lg"
               onClick={handleSubmit}
