@@ -34,6 +34,12 @@ export default function Calculator() {
     maintenanceRate: 5,
     interestRate: 7.5,
     loanTermYears: 30,
+    // Fix & Flip specific fields
+    arv: 400000,
+    rehabCosts: 50000,
+    holdingPeriodMonths: 6,
+    flipInterestRate: 12,
+    sellingCostsPercent: 8,
     firstName: "",
     lastName: "",
     email: "",
@@ -83,6 +89,52 @@ export default function Calculator() {
   };
 
   const dscrResults = calculateDSCR();
+
+  // Fix & Flip Calculation Logic
+  const calculateFixFlip = () => {
+    const totalProjectCost = formData.purchasePrice + formData.rehabCosts;
+    const loanAmount = formData.purchasePrice - formData.downPayment;
+    
+    // Loan-to-Cost (LTC) ratio
+    const ltc = (loanAmount / totalProjectCost) * 100;
+    
+    // Loan-to-ARV ratio
+    const ltArv = (loanAmount / formData.arv) * 100;
+    
+    // Monthly holding costs (interest-only during rehab)
+    const monthlyInterest = loanAmount * (formData.flipInterestRate / 100 / 12);
+    const totalHoldingCosts = monthlyInterest * formData.holdingPeriodMonths;
+    
+    // Selling costs (commissions, closing costs, etc.)
+    const sellingCosts = formData.arv * (formData.sellingCostsPercent / 100);
+    
+    // Expected profit calculation
+    const totalInvestment = formData.purchasePrice + formData.rehabCosts + totalHoldingCosts + sellingCosts;
+    const expectedProfit = formData.arv - totalInvestment;
+    const roi = (expectedProfit / (formData.downPayment + formData.rehabCosts)) * 100;
+    
+    // Check if deal meets typical lender requirements
+    const ltcPasses = ltc <= 90; // Most lenders max at 90% LTC
+    const ltArvPasses = ltArv <= 75; // Most lenders max at 70-75% LTV on ARV
+    const dealIsStrong = ltc <= 80 && ltArv <= 70 && expectedProfit > 0;
+    
+    return {
+      loanAmount,
+      totalProjectCost,
+      ltc: ltc.toFixed(1),
+      ltArv: ltArv.toFixed(1),
+      monthlyInterest: Math.round(monthlyInterest),
+      totalHoldingCosts: Math.round(totalHoldingCosts),
+      sellingCosts: Math.round(sellingCosts),
+      expectedProfit: Math.round(expectedProfit),
+      roi: roi.toFixed(1),
+      ltcPasses,
+      ltArvPasses,
+      dealIsStrong,
+    };
+  };
+
+  const flipResults = calculateFixFlip();
 
   const progress = (step / 8) * 100;
 
@@ -356,9 +408,9 @@ export default function Calculator() {
               {step === 1 && "What type of financing do you need?"}
               {step === 2 && "Tell us about the property"}
               {step === 3 && "What's your investment amount?"}
-              {step === 4 && (formData.loanType === "DSCR" ? "Rental Income & Expenses" : "Credit profile")}
+              {step === 4 && (formData.loanType === "DSCR" ? "Rental Income & Expenses" : formData.loanType === "Fix & Flip" ? "Rehab & ARV Details" : "Credit profile")}
               {step === 5 && "Credit profile"}
-              {step === 6 && "Review your DSCR scenario"}
+              {step === 6 && (formData.loanType === "DSCR" ? "Review your DSCR scenario" : formData.loanType === "Fix & Flip" ? "Review your Fix & Flip deal" : "Review your loan scenario")}
               {step === 7 && "Upload documents"}
               {step === 8 && "Contact information"}
             </CardTitle>
@@ -556,8 +608,86 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 4: Credit Score (for non-DSCR) / Step 5: Credit Score (for DSCR) */}
-            {((step === 4 && formData.loanType !== "DSCR") || step === 5) && (
+            {/* Step 4: Fix & Flip Rehab & ARV Details */}
+            {step === 4 && formData.loanType === "Fix & Flip" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label className="text-base font-semibold">After Repair Value (ARV)</Label>
+                    <Input
+                      type="number"
+                      value={formData.arv}
+                      onChange={(e) => updateField("arv", parseInt(e.target.value) || 0)}
+                      className="mt-2 text-lg"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Expected property value after renovation</p>
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <Label className="text-base font-semibold">Rehab/Renovation Budget</Label>
+                    <Input
+                      type="number"
+                      value={formData.rehabCosts}
+                      onChange={(e) => updateField("rehabCosts", parseInt(e.target.value) || 0)}
+                      className="mt-2 text-lg"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Total cost of repairs and improvements</p>
+                  </div>
+
+                  <div>
+                    <Label>Holding Period (months)</Label>
+                    <Input
+                      type="number"
+                      value={formData.holdingPeriodMonths}
+                      onChange={(e) => updateField("holdingPeriodMonths", parseInt(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label>Interest Rate (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      value={formData.flipInterestRate}
+                      onChange={(e) => updateField("flipInterestRate", parseFloat(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Selling Costs (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      value={formData.sellingCostsPercent}
+                      onChange={(e) => updateField("sellingCostsPercent", parseFloat(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Agent commissions, closing costs, etc.</p>
+                  </div>
+                </div>
+
+                <div className={`rounded-lg p-4 border-2 ${flipResults.dealIsStrong ? 'bg-green-50 border-green-200' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium">Expected Profit</span>
+                    <span className={`text-3xl font-bold ${flipResults.expectedProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${flipResults.expectedProfit.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className={`text-sm ${flipResults.dealIsStrong ? 'text-green-700' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'text-yellow-700' : 'text-red-700'}`}>
+                    {flipResults.dealIsStrong ? 'Strong deal! Meets lender requirements.' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'Meets basic requirements.' : 'May need higher down payment or lower purchase price.'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                    <div>LTC: {flipResults.ltc}% {parseFloat(flipResults.ltc) <= 90 ? '✓' : '⚠'}</div>
+                    <div>LTV (ARV): {flipResults.ltArv}% {parseFloat(flipResults.ltArv) <= 75 ? '✓' : '⚠'}</div>
+                    <div>Holding Costs: ${flipResults.totalHoldingCosts.toLocaleString()}</div>
+                    <div>ROI: {flipResults.roi}%</div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 4: Credit Score (for non-DSCR, non-Fix&Flip) / Step 5: Credit Score */}
+            {((step === 4 && formData.loanType !== "DSCR" && formData.loanType !== "Fix & Flip") || step === 5) && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <Label className="text-base font-semibold">Credit Score Range</Label>
                 <div className="space-y-3">
@@ -624,6 +754,40 @@ export default function Calculator() {
                         <div>
                           <p className="text-sm text-muted-foreground">NOI</p>
                           <p className="font-semibold text-lg">${dscrResults.noi.toLocaleString()}/yr</p>
+                        </div>
+                      </>
+                    )}
+                    {formData.loanType === "Fix & Flip" && (
+                      <>
+                        <div>
+                          <p className="text-sm text-muted-foreground">ARV</p>
+                          <p className="font-semibold text-lg">${formData.arv.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Rehab Budget</p>
+                          <p className="font-semibold text-lg">${formData.rehabCosts.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">LTC</p>
+                          <p className={`font-semibold text-lg ${flipResults.ltcPasses ? 'text-green-600' : 'text-red-600'}`}>
+                            {flipResults.ltc}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">LTV (ARV)</p>
+                          <p className={`font-semibold text-lg ${flipResults.ltArvPasses ? 'text-green-600' : 'text-red-600'}`}>
+                            {flipResults.ltArv}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Holding Costs</p>
+                          <p className="font-semibold text-lg">${flipResults.totalHoldingCosts.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Expected Profit</p>
+                          <p className={`font-semibold text-lg ${flipResults.expectedProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            ${flipResults.expectedProfit.toLocaleString()}
+                          </p>
                         </div>
                       </>
                     )}
