@@ -1,38 +1,58 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { loanApplications, type LoanApplication, type InsertLoanApplication } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Loan Applications
+  createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication>;
+  getLoanApplication(id: string): Promise<LoanApplication | undefined>;
+  getAllLoanApplications(): Promise<LoanApplication[]>;
+  updateLoanApplicationStatus(id: string, status: string): Promise<LoanApplication | undefined>;
+  updateLoanApplication(id: string, updates: Partial<LoanApplication>): Promise<LoanApplication | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication> {
+    const [created] = await db
+      .insert(loanApplications)
+      .values(application)
+      .returning();
+    return created;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getLoanApplication(id: string): Promise<LoanApplication | undefined> {
+    const [application] = await db
+      .select()
+      .from(loanApplications)
+      .where(eq(loanApplications.id, id));
+    return application || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getAllLoanApplications(): Promise<LoanApplication[]> {
+    const applications = await db
+      .select()
+      .from(loanApplications)
+      .orderBy(desc(loanApplications.submittedAt));
+    return applications;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateLoanApplicationStatus(id: string, status: string): Promise<LoanApplication | undefined> {
+    const [updated] = await db
+      .update(loanApplications)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(loanApplications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateLoanApplication(id: string, updates: Partial<LoanApplication>): Promise<LoanApplication | undefined> {
+    const [updated] = await db
+      .update(loanApplications)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(loanApplications.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
