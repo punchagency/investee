@@ -11,18 +11,34 @@ import { motion } from "framer-motion";
 
 export default function LoanDetailPage() {
   const [, params] = useRoute("/loan/:id");
-  const id = params?.id ? parseInt(params.id) : 0;
+  const id = params?.id || "";
   const [application, setApplication] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("loanApplications") || "[]");
-    const found = stored.find((app: any) => app.id === id);
-    if (found) {
-      // Ensure status exists
-      if (!found.status) found.status = "submitted";
-      setApplication(found);
+    async function fetchApplication() {
+      try {
+        const response = await fetch(`/api/applications/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setApplication(data);
+        }
+      } catch (error) {
+        console.error("Error fetching application:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+    if (id) fetchApplication();
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container py-12 text-center">
+        <p className="text-muted-foreground">Loading application...</p>
+      </div>
+    );
+  }
 
   if (!application) {
     return (
@@ -81,7 +97,7 @@ export default function LoanDetailPage() {
             </Badge>
           </div>
           <p className="text-muted-foreground">
-            {application.formData.propertyType} • {application.formData.loanType}
+            {application.propertyType} • {application.loanType}
           </p>
         </div>
         <div className="text-right">
@@ -131,17 +147,17 @@ export default function LoanDetailPage() {
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Property Details</h4>
                     <div className="space-y-1">
-                      <p><span className="font-semibold">Purchase Price:</span> ${application.formData.purchasePrice.toLocaleString()}</p>
-                      <p><span className="font-semibold">Down Payment:</span> ${application.formData.downPayment.toLocaleString()}</p>
-                      <p><span className="font-semibold">Property Type:</span> {application.formData.propertyType}</p>
+                      <p><span className="font-semibold">Purchase Price:</span> ${application.purchasePrice.toLocaleString()}</p>
+                      <p><span className="font-semibold">Down Payment:</span> ${application.downPayment.toLocaleString()}</p>
+                      <p><span className="font-semibold">Property Type:</span> {application.propertyType}</p>
                     </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Borrower Info</h4>
                     <div className="space-y-1">
-                      <p><span className="font-semibold">Name:</span> {application.formData.firstName} {application.formData.lastName}</p>
-                      <p><span className="font-semibold">Email:</span> {application.formData.email}</p>
-                      <p><span className="font-semibold">Credit Score:</span> {application.formData.creditScore}</p>
+                      <p><span className="font-semibold">Name:</span> {application.firstName} {application.lastName}</p>
+                      <p><span className="font-semibold">Email:</span> {application.email}</p>
+                      <p><span className="font-semibold">Credit Score:</span> {application.creditScore}</p>
                     </div>
                   </div>
                 </CardContent>

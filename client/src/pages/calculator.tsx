@@ -105,50 +105,52 @@ export default function Calculator() {
     }
   };
 
-  const handleSubmit = () => {
-    const application = {
-      id: Date.now(),
-      submittedAt: new Date().toISOString(),
-      formData,
+  const handleSubmit = async () => {
+    const loanAmount = formData.purchasePrice - formData.downPayment;
+    
+    const applicationData = {
+      loanType: formData.loanType,
+      propertyType: formData.propertyType,
+      address: formData.address,
+      purchasePrice: formData.purchasePrice,
+      estimatedValue: formData.estimatedValue,
+      downPayment: formData.downPayment,
+      loanAmount,
+      creditScore: formData.creditScore,
+      status: "submitted",
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone || "",
+      preferredContact: formData.preferredContact,
+      preferredCallTime: formData.preferredCallTime,
+      agreeMarketing: formData.agreeMarketing ? "yes" : "no",
       documents: files,
-      loanAmount: formData.purchasePrice - formData.downPayment,
+      attomData: formData.attomData,
     };
 
-    const existing = JSON.parse(localStorage.getItem("loanApplications") || "[]");
-    existing.push(application);
-    localStorage.setItem("loanApplications", JSON.stringify(existing));
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(applicationData),
+      });
 
-    const emailContent = `
-      TO: ${formData.email}
-      FROM: noreply@investee.com
-      SUBJECT: 3 Lender Matches Found - Investee Marketplace
-      
-      Hi ${formData.firstName},
-      
-      Great news! We've matched your loan request with 3 verified lenders:
-      
-      1. Legacy Biz Capital (Best Match)
-      2. Premier Capital Group
-      3. Rapid Funders LLC
-      
-      Loan Details:
-      Type: ${formData.loanType}
-      Amount: $${(formData.purchasePrice - formData.downPayment).toLocaleString()}
-      
-      Log in to view your full offers and term sheets.
-      
-      Best regards,
-      The Investee Team
-    `;
-    
-    console.log("📧 MOCK EMAIL SENT:", emailContent);
-    console.log("💾 Application saved to localStorage:", application);
+      if (!response.ok) {
+        throw new Error("Failed to submit application");
+      }
 
-    toast.success("Request submitted successfully!", {
-      description: `We found 3 lender matches for your deal. Confirmation email sent to ${formData.email}`,
-    });
+      toast.success("Request submitted successfully!", {
+        description: `We found 3 lender matches for your deal. Confirmation email sent to ${formData.email}`,
+      });
 
-    setShowResults(true);
+      setShowResults(true);
+    } catch (error) {
+      console.error("Error submitting application:", error);
+      toast.error("Failed to submit application", {
+        description: "Please try again later",
+      });
+    }
   };
 
   const loanAmount = formData.purchasePrice - formData.downPayment;

@@ -7,15 +7,23 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("loanApplications") || "[]");
-    // Add default status if missing
-    const withStatus = stored.map((app: any) => ({
-      ...app,
-      status: app.status || "submitted"
-    }));
-    setApplications(withStatus);
+    async function fetchApplications() {
+      try {
+        const response = await fetch("/api/applications");
+        if (response.ok) {
+          const data = await response.json();
+          setApplications(data);
+        }
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchApplications();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -95,7 +103,11 @@ export default function DashboardPage() {
 
         <Card>
             <CardContent className="p-0">
-                {applications.length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                        <p>Loading applications...</p>
+                    </div>
+                ) : applications.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                         <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-20" />
                         <p className="text-lg font-medium">No active applications</p>
@@ -114,14 +126,14 @@ export default function DashboardPage() {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-semibold text-lg">
-                                            {app.formData.loanType} Loan
+                                            {app.loanType} Loan
                                         </h3>
                                         <Badge className={getStatusColor(app.status)} variant="secondary">
                                             {app.status.toUpperCase().replace("_", " ")}
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
-                                        {app.formData.propertyType} • Requested: ${app.loanAmount?.toLocaleString()}
+                                        {app.propertyType} • Requested: ${app.loanAmount?.toLocaleString()}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-1">
                                         Submitted on {new Date(app.submittedAt).toLocaleDateString()}

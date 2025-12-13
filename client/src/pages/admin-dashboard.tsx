@@ -25,25 +25,50 @@ interface Application {
 }
 
 export default function AdminDashboard() {
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("loanApplications") || "[]");
-    // Add default status if missing
-    const withStatus = stored.map((app: any) => ({
-      ...app,
-      status: app.status || "submitted"
-    }));
-    setApplications(withStatus);
+    fetchApplications();
   }, []);
 
-  const updateStatus = (id: number, newStatus: string) => {
-    const updated = applications.map(app => 
-      app.id === id ? { ...app, status: newStatus } : app
-    );
-    setApplications(updated);
-    localStorage.setItem("loanApplications", JSON.stringify(updated));
-    toast.success(`Application #${id} status updated to ${newStatus}`);
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch("/api/applications");
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      toast.error("Failed to load applications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/applications/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+
+      // Update local state
+      const updated = applications.map(app => 
+        app.id === id ? { ...app, status: newStatus } : app
+      );
+      setApplications(updated);
+      toast.success(`Application status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -108,7 +133,11 @@ export default function AdminDashboard() {
           <CardDescription>Manage application statuses and workflow</CardDescription>
         </CardHeader>
         <CardContent>
-          {applications.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>Loading applications...</p>
+            </div>
+          ) : applications.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-20" />
               No applications found. Submit one from the calculator page first.
@@ -129,12 +158,12 @@ export default function AdminDashboard() {
               <TableBody>
                 {applications.map((app) => (
                   <TableRow key={app.id}>
-                    <TableCell className="font-mono text-xs">#{app.id}</TableCell>
+                    <TableCell className="font-mono text-xs">#{app.id.substring(0, 8)}</TableCell>
                     <TableCell>
-                      <div className="font-medium">{app.formData.firstName} {app.formData.lastName}</div>
-                      <div className="text-xs text-muted-foreground">{app.formData.email}</div>
+                      <div className="font-medium">{app.firstName} {app.lastName}</div>
+                      <div className="text-xs text-muted-foreground">{app.email}</div>
                     </TableCell>
-                    <TableCell>{app.formData.loanType}</TableCell>
+                    <TableCell>{app.loanType}</TableCell>
                     <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(app.submittedAt).toLocaleDateString()}
