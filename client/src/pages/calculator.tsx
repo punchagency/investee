@@ -7,17 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, ArrowLeft, Upload, Check, Calendar, Building2, Star, ShieldCheck, Clock } from "lucide-react";
+import { ArrowRight, ArrowLeft, Upload, Check, Calendar, Building2, Star, ShieldCheck, Clock, Search, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { searchProperty, type AttomPropertyData } from "@/services/attom";
 
 export default function Calculator() {
   const [step, setStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [files, setFiles] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     loanType: "DSCR",
     propertyType: "single-family",
+    address: "",
     purchasePrice: 300000,
     estimatedValue: 300000,
     downPayment: 60000,
@@ -30,12 +33,44 @@ export default function Calculator() {
     agreeMarketing: false,
     agreeTerms: false,
     preferredCallTime: "morning",
+    attomData: null as AttomPropertyData | null,
   });
 
   const progress = (step / 7) * 100;
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePropertySearch = async () => {
+    if (!formData.address) {
+      toast.error("Please enter a property address");
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const data = await searchProperty(formData.address);
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          attomData: data,
+          propertyType: data.summary.propClass === "Residential" ? "single-family" : "commercial",
+          estimatedValue: data.assessment.market.mktTotalValue,
+          purchasePrice: data.assessment.market.mktTotalValue, // Default to market value
+          downPayment: Math.round(data.assessment.market.mktTotalValue * 0.2), // Default 20% down
+        }));
+        toast.success("Property found!", {
+          description: `Verified data for ${data.address.line1}`,
+        });
+      } else {
+        toast.error("Property not found");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch property data");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleNext = () => {
@@ -306,22 +341,59 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 2: Property Type */}
+            {/* Step 2: Property Type & Search */}
             {step === 2 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <Label className="text-base font-semibold">Property Type</Label>
-                <Select value={formData.propertyType} onValueChange={(v) => updateField("propertyType", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single-family">Single Family Home</SelectItem>
-                    <SelectItem value="multi-family">Multi-Family (2-4 units)</SelectItem>
-                    <SelectItem value="apartment">Apartment Building</SelectItem>
-                    <SelectItem value="commercial">Commercial Property</SelectItem>
-                    <SelectItem value="mixed-use">Mixed Use</SelectItem>
-                  </SelectContent>
-                </Select>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Property Address</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="e.g. 123 Main St, Austin, TX" 
+                      value={formData.address}
+                      onChange={(e) => updateField("address", e.target.value)}
+                    />
+                    <Button onClick={handlePropertySearch} disabled={isSearching}>
+                      {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Search powered by ATTOM Data Solutions
+                  </p>
+                </div>
+
+                {formData.attomData && (
+                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                     <div className="flex items-start gap-3">
+                       <Check className="w-5 h-5 text-blue-600 mt-0.5" />
+                       <div>
+                         <p className="font-semibold text-blue-900">Verified Property Data Found</p>
+                         <p className="text-sm text-blue-700">
+                           {formData.attomData.summary.propClass} • Built {formData.attomData.summary.yearBuilt} • {formData.attomData.building.rooms.beds} Beds / {formData.attomData.building.rooms.bathsTotal} Baths
+                         </p>
+                         <p className="text-sm text-blue-700 font-medium mt-1">
+                           Est. Market Value: ${formData.attomData.assessment.market.mktTotalValue.toLocaleString()}
+                         </p>
+                       </div>
+                     </div>
+                   </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Property Type</Label>
+                  <Select value={formData.propertyType} onValueChange={(v) => updateField("propertyType", v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single-family">Single Family Home</SelectItem>
+                      <SelectItem value="multi-family">Multi-Family (2-4 units)</SelectItem>
+                      <SelectItem value="apartment">Apartment Building</SelectItem>
+                      <SelectItem value="commercial">Commercial Property</SelectItem>
+                      <SelectItem value="mixed-use">Mixed Use</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </motion.div>
             )}
 
