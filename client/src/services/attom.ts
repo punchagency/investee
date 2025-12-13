@@ -96,11 +96,13 @@ export interface AttomApiResponse {
     assessment?: {
       assessed?: {
         assdTotalValue?: number;
+        assdTtlValue?: number;
         assdLandValue?: number;
         assdImprValue?: number;
       };
       market?: {
         mktTotalValue?: number;
+        mktTtlValue?: number;
         mktLandValue?: number;
         mktImprValue?: number;
       };
@@ -162,10 +164,10 @@ export async function searchProperty(address: string): Promise<AttomPropertyData
       },
       assessment: {
         assessed: {
-          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || 0,
+          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || prop.assessment?.assessed?.assdTtlValue || 0,
         },
         market: {
-          mktTotalValue: prop.assessment?.market?.mktTotalValue || 0,
+          mktTotalValue: prop.assessment?.market?.mktTotalValue || prop.assessment?.market?.mktTtlValue || 0,
         },
       },
       lot: {
@@ -236,10 +238,10 @@ export async function searchPropertiesByRadius(
       },
       assessment: {
         assessed: {
-          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || 0,
+          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || prop.assessment?.assessed?.assdTtlValue || 0,
         },
         market: {
-          mktTotalValue: prop.assessment?.market?.mktTotalValue || 0,
+          mktTotalValue: prop.assessment?.market?.mktTotalValue || prop.assessment?.market?.mktTtlValue || 0,
         },
       },
       lot: {
