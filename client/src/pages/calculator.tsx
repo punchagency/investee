@@ -25,6 +25,15 @@ export default function Calculator() {
     estimatedValue: 300000,
     downPayment: 60000,
     creditScore: "700-739",
+    // DSCR specific fields
+    monthlyRent: 2500,
+    annualTaxes: 4000,
+    annualInsurance: 1500,
+    monthlyHOA: 0,
+    vacancyRate: 5,
+    maintenanceRate: 5,
+    interestRate: 7.5,
+    loanTermYears: 30,
     firstName: "",
     lastName: "",
     email: "",
@@ -36,7 +45,46 @@ export default function Calculator() {
     attomData: null as AttomPropertyData | null,
   });
 
-  const progress = (step / 7) * 100;
+  // DSCR Calculation Logic
+  const calculateDSCR = () => {
+    const loanAmount = formData.purchasePrice - formData.downPayment;
+    const monthlyRate = formData.interestRate / 100 / 12;
+    const numPayments = formData.loanTermYears * 12;
+    
+    // Monthly P&I Payment (standard mortgage formula)
+    const monthlyPI = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
+    const annualDebtService = monthlyPI * 12;
+    
+    // Gross Annual Income
+    const grossAnnualRent = formData.monthlyRent * 12;
+    
+    // Operating Expenses
+    const vacancyLoss = grossAnnualRent * (formData.vacancyRate / 100);
+    const maintenance = grossAnnualRent * (formData.maintenanceRate / 100);
+    const totalOperatingExpenses = formData.annualTaxes + formData.annualInsurance + (formData.monthlyHOA * 12) + vacancyLoss + maintenance;
+    
+    // Net Operating Income
+    const noi = grossAnnualRent - totalOperatingExpenses;
+    
+    // DSCR Ratio
+    const dscr = noi / annualDebtService;
+    
+    return {
+      loanAmount,
+      monthlyPI: Math.round(monthlyPI),
+      annualDebtService: Math.round(annualDebtService),
+      grossAnnualRent,
+      totalOperatingExpenses: Math.round(totalOperatingExpenses),
+      noi: Math.round(noi),
+      dscr: dscr.toFixed(2),
+      dscrPasses: dscr >= 1.0,
+      dscrStrong: dscr >= 1.25,
+    };
+  };
+
+  const dscrResults = calculateDSCR();
+
+  const progress = (step / 8) * 100;
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -74,7 +122,7 @@ export default function Calculator() {
   };
 
   const handleNext = () => {
-    if (step === 7) {
+    if (step === 8) {
       if (formData.firstName === "") {
         toast.error("Please enter your first name");
         return;
@@ -88,7 +136,7 @@ export default function Calculator() {
         return;
       }
     }
-    if (step < 7) setStep(step + 1);
+    if (step < 8) setStep(step + 1);
   };
 
   const handlePrev = () => {
@@ -308,9 +356,9 @@ export default function Calculator() {
               {step === 1 && "What type of financing do you need?"}
               {step === 2 && "Tell us about the property"}
               {step === 3 && "What's your investment amount?"}
-              {step === 4 && "Financial details"}
+              {step === 4 && (formData.loanType === "DSCR" ? "Rental Income & Expenses" : "Credit profile")}
               {step === 5 && "Credit profile"}
-              {step === 6 && "Review your scenario"}
+              {step === 6 && "Review your DSCR scenario"}
               {step === 7 && "Upload documents"}
               {step === 8 && "Contact information"}
             </CardTitle>
@@ -436,8 +484,80 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 4: Credit Score */}
-            {step === 4 && (
+            {/* Step 4: DSCR Rental Income & Expenses */}
+            {step === 4 && formData.loanType === "DSCR" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label className="text-base font-semibold">Monthly Rental Income</Label>
+                    <Input
+                      type="number"
+                      value={formData.monthlyRent}
+                      onChange={(e) => updateField("monthlyRent", parseInt(e.target.value) || 0)}
+                      className="mt-2 text-lg"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Expected or actual monthly rent</p>
+                  </div>
+                  
+                  <div>
+                    <Label>Annual Property Taxes</Label>
+                    <Input
+                      type="number"
+                      value={formData.annualTaxes}
+                      onChange={(e) => updateField("annualTaxes", parseInt(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label>Annual Insurance</Label>
+                    <Input
+                      type="number"
+                      value={formData.annualInsurance}
+                      onChange={(e) => updateField("annualInsurance", parseInt(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label>Monthly HOA (if any)</Label>
+                    <Input
+                      type="number"
+                      value={formData.monthlyHOA}
+                      onChange={(e) => updateField("monthlyHOA", parseInt(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label>Interest Rate (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.125"
+                      value={formData.interestRate}
+                      onChange={(e) => updateField("interestRate", parseFloat(e.target.value) || 0)}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                <div className={`rounded-lg p-4 border-2 ${dscrResults.dscrStrong ? 'bg-green-50 border-green-200' : dscrResults.dscrPasses ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Your DSCR</span>
+                    <span className={`text-3xl font-bold ${dscrResults.dscrStrong ? 'text-green-600' : dscrResults.dscrPasses ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {dscrResults.dscr}
+                    </span>
+                  </div>
+                  <p className={`text-sm ${dscrResults.dscrStrong ? 'text-green-700' : dscrResults.dscrPasses ? 'text-yellow-700' : 'text-red-700'}`}>
+                    {dscrResults.dscrStrong ? 'Strong qualification! Most lenders require 1.0+' : dscrResults.dscrPasses ? 'Meets minimum requirements (1.0+)' : 'Below 1.0 - may need higher down payment or rent'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                    <div>NOI: ${dscrResults.noi.toLocaleString()}/yr</div>
+                    <div>Debt Service: ${dscrResults.annualDebtService.toLocaleString()}/yr</div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 4: Credit Score (for non-DSCR) / Step 5: Credit Score (for DSCR) */}
+            {((step === 4 && formData.loanType !== "DSCR") || step === 5) && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <Label className="text-base font-semibold">Credit Score Range</Label>
                 <div className="space-y-3">
@@ -464,8 +584,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 5: Review */}
-            {step === 5 && (
+            {/* Step 6: Review with DSCR Analysis */}
+            {step === 6 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <div className="bg-muted rounded-lg p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -485,6 +605,28 @@ export default function Calculator() {
                       <p className="text-sm text-muted-foreground">Loan Amount</p>
                       <p className="font-semibold text-lg text-primary">${loanAmount.toLocaleString()}</p>
                     </div>
+                    {formData.loanType === "DSCR" && (
+                      <>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Monthly Rent</p>
+                          <p className="font-semibold text-lg">${formData.monthlyRent.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">DSCR Ratio</p>
+                          <p className={`font-semibold text-lg ${dscrResults.dscrStrong ? 'text-green-600' : dscrResults.dscrPasses ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {dscrResults.dscr}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Monthly P&I</p>
+                          <p className="font-semibold text-lg">${dscrResults.monthlyPI.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">NOI</p>
+                          <p className="font-semibold text-lg">${dscrResults.noi.toLocaleString()}/yr</p>
+                        </div>
+                      </>
+                    )}
                     <div>
                       <p className="text-sm text-muted-foreground">Credit Score</p>
                       <p className="font-semibold text-lg">{formData.creditScore}</p>
@@ -497,8 +639,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 6: Document Upload */}
-            {step === 6 && (
+            {/* Step 7: Document Upload */}
+            {step === 7 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold mb-4 block">Upload Supporting Documents</Label>
@@ -535,8 +677,8 @@ export default function Calculator() {
               </motion.div>
             )}
 
-            {/* Step 7: Contact Info & Lead Capture */}
-            {step === 7 && (
+            {/* Step 8: Contact Info & Lead Capture */}
+            {step === 8 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -653,7 +795,7 @@ export default function Calculator() {
             Back
           </Button>
 
-          {step === 7 ? (
+          {step === 8 ? (
             <Button
               size="lg"
               onClick={handleSubmit}
