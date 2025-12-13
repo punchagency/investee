@@ -59,7 +59,7 @@ export default function PropertySearch() {
   };
 
   return (
-    <div className="container max-w-4xl px-4 md:px-8 py-12 min-h-screen">
+    <div className="container max-w-4xl px-4 md:px-8 py-12 min-h-screen mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
