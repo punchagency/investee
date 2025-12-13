@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/layout";
 import Landing from "@/pages/landing";
 import SearchPage from "@/pages/search";
+import PropertySearchPage from "@/pages/property-search";
 import AnalysisPage from "@/pages/analysis";
 import DashboardPage from "@/pages/dashboard";
 import CalculatorPage from "@/pages/calculator";
@@ -20,6 +21,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/search" component={SearchPage} />
+        <Route path="/property-search" component={PropertySearchPage} />
         <Route path="/analysis/:id" component={AnalysisPage} />
         <Route path="/calculator" component={CalculatorPage} />
         <Route path="/learning" component={LearningPage} />

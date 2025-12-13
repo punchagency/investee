@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { insertLoanApplicationSchema } from "@shared/schema";
 import { z } from "zod";
 
+const ATTOM_API_BASE = "https://api.gateway.attomdata.com/propertyapi/v1.0.0";
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -83,6 +85,88 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating application:", error);
       res.status(500).json({ error: "Failed to update application" });
+    }
+  });
+
+  // ATTOM Property Search API proxy
+  app.get("/api/property/search", async (req, res) => {
+    try {
+      const { address } = req.query;
+      
+      if (!address || typeof address !== "string") {
+        res.status(400).json({ error: "Address is required" });
+        return;
+      }
+
+      const apiKey = process.env.ATTOM_API_KEY;
+      if (!apiKey) {
+        res.status(500).json({ error: "ATTOM API key not configured" });
+        return;
+      }
+
+      const response = await fetch(
+        `${ATTOM_API_BASE}/property/basicprofile?address=${encodeURIComponent(address)}`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "apikey": apiKey,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          res.status(404).json({ error: "Property not found" });
+          return;
+        }
+        throw new Error(`ATTOM API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Error searching property:", error);
+      res.status(500).json({ error: "Failed to search property" });
+    }
+  });
+
+  // ATTOM Radius Search API proxy
+  app.get("/api/property/radius", async (req, res) => {
+    try {
+      const { lat, lng, radius, minbeds, maxbeds, propertytype } = req.query;
+      
+      if (!lat || !lng) {
+        res.status(400).json({ error: "Latitude and longitude are required" });
+        return;
+      }
+
+      const apiKey = process.env.ATTOM_API_KEY;
+      if (!apiKey) {
+        res.status(500).json({ error: "ATTOM API key not configured" });
+        return;
+      }
+
+      let url = `${ATTOM_API_BASE}/property/snapshot?latitude=${lat}&longitude=${lng}&radius=${radius || 1}`;
+      if (minbeds) url += `&minbeds=${minbeds}`;
+      if (maxbeds) url += `&maxbeds=${maxbeds}`;
+      if (propertytype) url += `&propertytype=${propertytype}`;
+
+      const response = await fetch(url, {
+        headers: {
+          "Accept": "application/json",
+          "apikey": apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`ATTOM API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Error searching properties by radius:", error);
+      res.status(500).json({ error: "Failed to search properties" });
     }
   });
 
