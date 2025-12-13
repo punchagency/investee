@@ -53,7 +53,7 @@ export default function Landing() {
       {/* Welcome Section */}
       <section className="py-16 bg-white">
         <div className="container px-4 md:px-8 max-w-screen-2xl">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-6">
               Lenders Compete, You Win
             </h2>
