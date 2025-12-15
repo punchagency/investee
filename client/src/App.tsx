@@ -15,6 +15,7 @@ import NotFound from "@/pages/not-found";
 import AdminDashboard from "@/pages/admin-dashboard";
 import LoanDetailPage from "@/pages/loan-detail";
 import PropertyProfilePage from "@/pages/property-profile";
+import PropertyComparePage from "@/pages/property-compare";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/loan/:id" component={LoanDetailPage} />
         <Route path="/property/:id" component={PropertyProfilePage} />
+        <Route path="/compare" component={PropertyComparePage} />
         <Route path="/terms" component={LegalPage} />
         <Route path="/privacy" component={LegalPage} />
         <Route component={NotFound} />

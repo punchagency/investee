@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Building2, Bell, AlertCircle, Home, RefreshCw, CheckCircle, XCircle, Clock, MapPin } from "lucide-react";
+import { ArrowRight, Building2, Bell, AlertCircle, Home, RefreshCw, CheckCircle, XCircle, Clock, MapPin, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -254,6 +254,12 @@ export default function DashboardPage() {
                   ))}
                 </select>
               </div>
+              <Link href="/compare">
+                <Button variant="outline" data-testid="button-compare">
+                  <Scale className="w-4 h-4 mr-2" />
+                  Compare
+                </Button>
+              </Link>
               <Button 
                 onClick={enrichAllProperties} 
                 disabled={enriching || pendingCount === 0}
