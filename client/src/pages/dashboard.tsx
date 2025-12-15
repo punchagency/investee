@@ -287,8 +287,8 @@ export default function DashboardPage() {
                   <table className="w-full">
                     <thead className="bg-muted/50">
                       <tr className="text-left text-sm text-muted-foreground">
-                        <th className="p-4 font-medium">Property</th>
-                        <th className="p-4 font-medium">Type</th>
+                        <th className="p-4 font-medium w-[280px]">Property</th>
+                        <th className="p-4 font-medium w-[80px]">Type</th>
                         <th className="p-4 font-medium">Size</th>
                         <th className="p-4 font-medium">Beds/Baths</th>
                         <th className="p-4 font-medium">Est Value</th>
