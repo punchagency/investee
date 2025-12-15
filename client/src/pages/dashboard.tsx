@@ -31,6 +31,11 @@ interface Property {
   attomBaths: number | null;
   attomPropClass: string | null;
   attomError: string | null;
+  attomAvmValue: number | null;
+  attomAvmHigh: number | null;
+  attomAvmLow: number | null;
+  attomAvmConfidence: number | null;
+  attomTaxAmount: number | null;
 }
 
 interface Listing {
@@ -113,14 +118,18 @@ export default function DashboardPage() {
     }
   }
 
-  async function enrichAllProperties() {
+  async function enrichAllProperties(force = false) {
     setEnriching(true);
     try {
-      await fetch("/api/properties/enrich", { method: "POST" });
+      await fetch("/api/properties/enrich", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force })
+      });
       setTimeout(() => {
         fetchProperties();
         setEnriching(false);
-      }, 3000);
+      }, 5000);
     } catch (error) {
       console.error("Error enriching properties:", error);
       setEnriching(false);
@@ -261,7 +270,7 @@ export default function DashboardPage() {
   const successCount = properties.filter(p => p.attomStatus === "success").length;
   const pendingCount = properties.filter(p => p.attomStatus === "pending" || p.attomStatus === "rate_limited").length;
   const failedCount = properties.filter(p => p.attomStatus === "failed").length;
-  const totalPortfolioValue = properties.reduce((sum, p) => sum + (p.attomMarketValue || p.estValue || 0), 0);
+  const totalPortfolioValue = properties.reduce((sum, p) => sum + (p.attomAvmValue || p.attomMarketValue || p.estValue || 0), 0);
 
   const propertyTypes = Array.from(new Set(properties.map(p => p.propertyType).filter(Boolean)));
 
@@ -408,12 +417,21 @@ export default function DashboardPage() {
                 </Button>
               </Link>
               <Button 
-                onClick={enrichAllProperties} 
+                onClick={() => enrichAllProperties(false)} 
                 disabled={enriching || pendingCount === 0}
                 data-testid="button-enrich-all"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${enriching ? 'animate-spin' : ''}`} />
-                {enriching ? "Enriching..." : "Enrich All"}
+                {enriching ? "Enriching..." : `Enrich Pending (${pendingCount})`}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => enrichAllProperties(true)} 
+                disabled={enriching || properties.length === 0}
+                data-testid="button-refresh-all"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${enriching ? 'animate-spin' : ''}`} />
+                {enriching ? "Refreshing..." : "Refresh All Data"}
               </Button>
             </div>
           </div>
@@ -445,7 +463,7 @@ export default function DashboardPage() {
                         <th className="p-4 font-medium">Size</th>
                         <th className="p-4 font-medium">Beds/Baths</th>
                         <th className="p-4 font-medium">Est Value</th>
-                        <th className="p-4 font-medium">ATTOM Value</th>
+                        <th className="p-4 font-medium">Investee Value</th>
                         <th className="p-4 font-medium">Status</th>
                         <th className="p-4 font-medium">Actions</th>
                       </tr>
@@ -492,7 +510,18 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="p-4">
-                            {property.attomMarketValue ? (
+                            {property.attomAvmValue ? (
+                              <div>
+                                <span className="text-sm font-medium text-primary">
+                                  ${property.attomAvmValue.toLocaleString()}
+                                </span>
+                                {property.attomAvmConfidence && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({property.attomAvmConfidence}%)
+                                  </span>
+                                )}
+                              </div>
+                            ) : property.attomMarketValue ? (
                               <span className="text-sm font-medium text-primary">
                                 ${property.attomMarketValue.toLocaleString()}
                               </span>
@@ -525,7 +554,7 @@ export default function DashboardPage() {
                                 size="sm"
                                 onClick={() => {
                                   setSelectedPropertyForListing(property);
-                                  setListingPrice(String(property.attomMarketValue || property.estValue || ""));
+                                  setListingPrice(String(property.attomAvmValue || property.attomMarketValue || property.estValue || ""));
                                   setListingDialogOpen(true);
                                 }}
                                 data-testid={`button-list-${property.id}`}

@@ -412,12 +412,19 @@ export async function registerRoutes(
     }
   });
 
-  // Enrich all pending properties with ATTOM data
+  // Enrich all properties with ATTOM data
   app.post("/api/properties/enrich", async (req, res) => {
     try {
-      const pendingProperties = await storage.getPropertiesByStatus("pending");
-      const rateLimitedProperties = await storage.getPropertiesByStatus("rate_limited");
-      const toEnrich = [...pendingProperties, ...rateLimitedProperties];
+      const { force } = req.body || {};
+      let toEnrich;
+      
+      if (force) {
+        toEnrich = await storage.getAllProperties();
+      } else {
+        const pendingProperties = await storage.getPropertiesByStatus("pending");
+        const rateLimitedProperties = await storage.getPropertiesByStatus("rate_limited");
+        toEnrich = [...pendingProperties, ...rateLimitedProperties];
+      }
 
       if (toEnrich.length === 0) {
         res.json({ success: true, message: "No properties to enrich", enriched: 0 });
