@@ -77,6 +77,8 @@ export default function DashboardPage() {
   const [enriching, setEnriching] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<string>("address");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [listingDialogOpen, setListingDialogOpen] = useState(false);
   const [selectedPropertyForListing, setSelectedPropertyForListing] = useState<Property | null>(null);
   const [listingPrice, setListingPrice] = useState("");
@@ -274,13 +276,50 @@ export default function DashboardPage() {
 
   const propertyTypes = Array.from(new Set(properties.map(p => p.propertyType).filter(Boolean)));
 
-  const filteredProperties = properties.filter(p => {
-    const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "pending" && (p.attomStatus === "pending" || p.attomStatus === "rate_limited")) ||
-      (statusFilter !== "pending" && p.attomStatus === statusFilter);
-    const matchesType = typeFilter === "all" || p.propertyType === typeFilter;
-    return matchesStatus && matchesType;
-  });
+  const filteredProperties = properties
+    .filter(p => {
+      const matchesStatus = statusFilter === "all" || 
+        (statusFilter === "pending" && (p.attomStatus === "pending" || p.attomStatus === "rate_limited")) ||
+        (statusFilter !== "pending" && p.attomStatus === statusFilter);
+      const matchesType = typeFilter === "all" || p.propertyType === typeFilter;
+      return matchesStatus && matchesType;
+    })
+    .sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+      
+      switch (sortField) {
+        case "address":
+          aVal = a.address?.toLowerCase() || "";
+          bVal = b.address?.toLowerCase() || "";
+          break;
+        case "value":
+          aVal = a.attomAvmValue || a.attomMarketValue || a.estValue || 0;
+          bVal = b.attomAvmValue || b.attomMarketValue || b.estValue || 0;
+          break;
+        case "status":
+          aVal = a.attomStatus || "";
+          bVal = b.attomStatus || "";
+          break;
+        case "type":
+          aVal = a.propertyType || "";
+          bVal = b.propertyType || "";
+          break;
+        case "size":
+          aVal = a.attomBldgSize || a.sqFt || 0;
+          bVal = b.attomBldgSize || b.sqFt || 0;
+          break;
+        case "beds":
+          aVal = (a.attomBeds || a.beds || 0) * 10 + (a.attomBaths || a.baths || 0);
+          bVal = (b.attomBeds || b.beds || 0) * 10 + (b.attomBaths || b.baths || 0);
+          break;
+      }
+      
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDirection === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      return sortDirection === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
 
   return (
     <div className="container max-w-screen-2xl px-4 md:px-8 py-8 min-h-screen">
@@ -408,6 +447,31 @@ export default function DashboardPage() {
                   {propertyTypes.map(type => (
                     <option key={type} value={type || ""}>{type}</option>
                   ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sort:</span>
+                <select 
+                  value={sortField}
+                  onChange={(e) => setSortField(e.target.value)}
+                  className="border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="select-sort-field"
+                >
+                  <option value="address">Street Name</option>
+                  <option value="value">Est Value</option>
+                  <option value="status">Status</option>
+                  <option value="type">Type</option>
+                  <option value="size">Size</option>
+                  <option value="beds">Beds/Baths</option>
+                </select>
+                <select 
+                  value={sortDirection}
+                  onChange={(e) => setSortDirection(e.target.value as "asc" | "desc")}
+                  className="border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="select-sort-direction"
+                >
+                  <option value="asc">ASC</option>
+                  <option value="desc">DESC</option>
                 </select>
               </div>
               <Link href="/compare">
