@@ -81,3 +81,59 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
 
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
+
+export const propertyListings = pgTable("property_listings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").notNull(),
+  ownerUserId: text("owner_user_id").notNull().default("default_user"),
+  status: text("status").notNull().default("active"),
+  listPrice: integer("list_price"),
+  description: text("description"),
+  terms: text("terms"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertListingSchema = createInsertSchema(propertyListings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertListing = z.infer<typeof insertListingSchema>;
+export type PropertyListing = typeof propertyListings.$inferSelect;
+
+export const propertyWatchlist = pgTable("property_watchlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().default("default_user"),
+  listingId: varchar("listing_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWatchlistSchema = createInsertSchema(propertyWatchlist).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertWatchlist = z.infer<typeof insertWatchlistSchema>;
+export type PropertyWatchlistItem = typeof propertyWatchlist.$inferSelect;
+
+export const propertyOffers = pgTable("property_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull(),
+  buyerUserId: text("buyer_user_id").notNull().default("default_user"),
+  offerAmount: integer("offer_amount").notNull(),
+  status: text("status").notNull().default("submitted"),
+  message: text("message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertOfferSchema = createInsertSchema(propertyOffers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type PropertyOffer = typeof propertyOffers.$inferSelect;

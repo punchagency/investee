@@ -1,6 +1,13 @@
-import { loanApplications, properties, type LoanApplication, type InsertLoanApplication, type Property, type InsertProperty } from "@shared/schema";
+import { 
+  loanApplications, properties, propertyListings, propertyWatchlist, propertyOffers,
+  type LoanApplication, type InsertLoanApplication, 
+  type Property, type InsertProperty,
+  type PropertyListing, type InsertListing,
+  type PropertyWatchlistItem, type InsertWatchlist,
+  type PropertyOffer, type InsertOffer
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication>;
@@ -15,6 +22,24 @@ export interface IStorage {
   getAllProperties(): Promise<Property[]>;
   getPropertiesByStatus(status: string): Promise<Property[]>;
   updateProperty(id: string, updates: Partial<Property>): Promise<Property | undefined>;
+
+  createListing(listing: InsertListing): Promise<PropertyListing>;
+  getListing(id: string): Promise<PropertyListing | undefined>;
+  getAllListings(): Promise<PropertyListing[]>;
+  getListingsByOwner(ownerId: string): Promise<PropertyListing[]>;
+  updateListing(id: string, updates: Partial<PropertyListing>): Promise<PropertyListing | undefined>;
+  deleteListing(id: string): Promise<void>;
+
+  addToWatchlist(item: InsertWatchlist): Promise<PropertyWatchlistItem>;
+  removeFromWatchlist(userId: string, listingId: string): Promise<void>;
+  getWatchlistByUser(userId: string): Promise<PropertyWatchlistItem[]>;
+  isInWatchlist(userId: string, listingId: string): Promise<boolean>;
+
+  createOffer(offer: InsertOffer): Promise<PropertyOffer>;
+  getOffer(id: string): Promise<PropertyOffer | undefined>;
+  getOffersByListing(listingId: string): Promise<PropertyOffer[]>;
+  getOffersByBuyer(buyerId: string): Promise<PropertyOffer[]>;
+  updateOffer(id: string, updates: Partial<PropertyOffer>): Promise<PropertyOffer | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,6 +132,133 @@ export class DatabaseStorage implements IStorage {
       .update(properties)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(properties.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async createListing(listing: InsertListing): Promise<PropertyListing> {
+    const [created] = await db
+      .insert(propertyListings)
+      .values(listing)
+      .returning();
+    return created;
+  }
+
+  async getListing(id: string): Promise<PropertyListing | undefined> {
+    const [listing] = await db
+      .select()
+      .from(propertyListings)
+      .where(eq(propertyListings.id, id));
+    return listing || undefined;
+  }
+
+  async getAllListings(): Promise<PropertyListing[]> {
+    const listings = await db
+      .select()
+      .from(propertyListings)
+      .where(eq(propertyListings.status, "active"))
+      .orderBy(desc(propertyListings.createdAt));
+    return listings;
+  }
+
+  async getListingsByOwner(ownerId: string): Promise<PropertyListing[]> {
+    const listings = await db
+      .select()
+      .from(propertyListings)
+      .where(eq(propertyListings.ownerUserId, ownerId))
+      .orderBy(desc(propertyListings.createdAt));
+    return listings;
+  }
+
+  async updateListing(id: string, updates: Partial<PropertyListing>): Promise<PropertyListing | undefined> {
+    const [updated] = await db
+      .update(propertyListings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(propertyListings.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteListing(id: string): Promise<void> {
+    await db.delete(propertyListings).where(eq(propertyListings.id, id));
+  }
+
+  async addToWatchlist(item: InsertWatchlist): Promise<PropertyWatchlistItem> {
+    const [created] = await db
+      .insert(propertyWatchlist)
+      .values(item)
+      .returning();
+    return created;
+  }
+
+  async removeFromWatchlist(userId: string, listingId: string): Promise<void> {
+    await db
+      .delete(propertyWatchlist)
+      .where(and(
+        eq(propertyWatchlist.userId, userId),
+        eq(propertyWatchlist.listingId, listingId)
+      ));
+  }
+
+  async getWatchlistByUser(userId: string): Promise<PropertyWatchlistItem[]> {
+    const items = await db
+      .select()
+      .from(propertyWatchlist)
+      .where(eq(propertyWatchlist.userId, userId))
+      .orderBy(desc(propertyWatchlist.createdAt));
+    return items;
+  }
+
+  async isInWatchlist(userId: string, listingId: string): Promise<boolean> {
+    const [item] = await db
+      .select()
+      .from(propertyWatchlist)
+      .where(and(
+        eq(propertyWatchlist.userId, userId),
+        eq(propertyWatchlist.listingId, listingId)
+      ));
+    return !!item;
+  }
+
+  async createOffer(offer: InsertOffer): Promise<PropertyOffer> {
+    const [created] = await db
+      .insert(propertyOffers)
+      .values(offer)
+      .returning();
+    return created;
+  }
+
+  async getOffer(id: string): Promise<PropertyOffer | undefined> {
+    const [offer] = await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.id, id));
+    return offer || undefined;
+  }
+
+  async getOffersByListing(listingId: string): Promise<PropertyOffer[]> {
+    const offers = await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.listingId, listingId))
+      .orderBy(desc(propertyOffers.createdAt));
+    return offers;
+  }
+
+  async getOffersByBuyer(buyerId: string): Promise<PropertyOffer[]> {
+    const offers = await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.buyerUserId, buyerId))
+      .orderBy(desc(propertyOffers.createdAt));
+    return offers;
+  }
+
+  async updateOffer(id: string, updates: Partial<PropertyOffer>): Promise<PropertyOffer | undefined> {
+    const [updated] = await db
+      .update(propertyOffers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(propertyOffers.id, id))
       .returning();
     return updated || undefined;
   }
