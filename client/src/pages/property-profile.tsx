@@ -353,16 +353,16 @@ export default function PropertyProfilePage() {
                 />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">Market Value ($)</Label>
+                <Label className="text-sm text-muted-foreground">Investee Market Value ($)</Label>
                 <Input
                   type="number"
                   value={editedProperty.attomMarketValue || ""}
                   onChange={(e) => updateField("attomMarketValue", e.target.value ? Number(e.target.value) : null)}
-                  data-testid="input-attom-value"
+                  data-testid="input-market-value"
                 />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">Assessed Value ($)</Label>
+                <Label className="text-sm text-muted-foreground">Investee Assessed Value ($)</Label>
                 <Input
                   type="number"
                   value={editedProperty.attomAssessedValue || ""}
