@@ -444,16 +444,16 @@ export async function registerRoutes(
   // Create a new listing
   app.post("/api/listings", async (req, res) => {
     try {
-      const validatedData = insertListingSchema.parse(req.body);
-      const listing = await storage.createListing(validatedData);
+      const userId = "default_user";
+      const listingData = {
+        ...req.body,
+        ownerUserId: userId,
+      };
+      const listing = await storage.createListing(listingData);
       res.status(201).json(listing);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid request data", details: error.errors });
-      } else {
-        console.error("Error creating listing:", error);
-        res.status(500).json({ error: "Failed to create listing" });
-      }
+      console.error("Error creating listing:", error);
+      res.status(500).json({ error: "Failed to create listing" });
     }
   });
 
@@ -610,16 +610,16 @@ export async function registerRoutes(
   // Create offer
   app.post("/api/offers", async (req, res) => {
     try {
-      const validatedData = insertOfferSchema.parse(req.body);
-      const offer = await storage.createOffer(validatedData);
+      const userId = "default_user";
+      const offerData = {
+        ...req.body,
+        buyerUserId: userId,
+      };
+      const offer = await storage.createOffer(offerData);
       res.status(201).json(offer);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid request data", details: error.errors });
-      } else {
-        console.error("Error creating offer:", error);
-        res.status(500).json({ error: "Failed to create offer" });
-      }
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "Failed to create offer" });
     }
   });
 

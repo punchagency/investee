@@ -16,6 +16,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import LoanDetailPage from "@/pages/loan-detail";
 import PropertyProfilePage from "@/pages/property-profile";
 import PropertyComparePage from "@/pages/property-compare";
+import MarketplacePage from "@/pages/marketplace";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/loan/:id" component={LoanDetailPage} />
         <Route path="/property/:id" component={PropertyProfilePage} />
         <Route path="/compare" component={PropertyComparePage} />
+        <Route path="/marketplace" component={MarketplacePage} />
         <Route path="/terms" component={LegalPage} />
         <Route path="/privacy" component={LegalPage} />
         <Route component={NotFound} />

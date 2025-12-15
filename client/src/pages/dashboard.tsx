@@ -2,9 +2,13 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Building2, Bell, AlertCircle, Home, RefreshCw, CheckCircle, XCircle, Clock, MapPin, Scale } from "lucide-react";
+import { ArrowRight, Building2, Bell, AlertCircle, Home, RefreshCw, CheckCircle, XCircle, Clock, MapPin, Scale, Heart, DollarSign, Tag, Trash2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface Property {
   id: string;
@@ -29,18 +33,56 @@ interface Property {
   attomError: string | null;
 }
 
+interface Listing {
+  id: string;
+  propertyId: string;
+  status: string;
+  listPrice: number | null;
+  description: string | null;
+  property?: Property | null;
+  offers?: Offer[];
+}
+
+interface WatchlistItem {
+  id: string;
+  listingId: string;
+  listing?: Listing | null;
+  property?: Property | null;
+}
+
+interface Offer {
+  id: string;
+  listingId: string;
+  offerAmount: number;
+  status: string;
+  message: string | null;
+  listing?: Listing | null;
+  property?: Property | null;
+  createdAt: string;
+}
+
 export default function DashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [myOffers, setMyOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [propertiesLoading, setPropertiesLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [listingDialogOpen, setListingDialogOpen] = useState(false);
+  const [selectedPropertyForListing, setSelectedPropertyForListing] = useState<Property | null>(null);
+  const [listingPrice, setListingPrice] = useState("");
+  const [listingDescription, setListingDescription] = useState("");
 
   useEffect(() => {
     fetchApplications();
     fetchProperties();
+    fetchMyListings();
+    fetchWatchlist();
+    fetchMyOffers();
   }, []);
 
   async function fetchApplications() {
@@ -91,6 +133,99 @@ export default function DashboardPage() {
       fetchProperties();
     } catch (error) {
       console.error("Error enriching property:", error);
+    }
+  }
+
+  async function fetchMyListings() {
+    try {
+      const response = await fetch("/api/listings/my");
+      if (response.ok) {
+        const data = await response.json();
+        setMyListings(data);
+      }
+    } catch (error) {
+      console.error("Error fetching my listings:", error);
+    }
+  }
+
+  async function fetchWatchlist() {
+    try {
+      const response = await fetch("/api/watchlist");
+      if (response.ok) {
+        const data = await response.json();
+        setWatchlist(data);
+      }
+    } catch (error) {
+      console.error("Error fetching watchlist:", error);
+    }
+  }
+
+  async function fetchMyOffers() {
+    try {
+      const response = await fetch("/api/offers/my");
+      if (response.ok) {
+        const data = await response.json();
+        setMyOffers(data);
+      }
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+    }
+  }
+
+  async function createListing() {
+    if (!selectedPropertyForListing || !listingPrice) return;
+    try {
+      const response = await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: selectedPropertyForListing.id,
+          listPrice: parseInt(listingPrice),
+          description: listingDescription,
+          status: "active",
+        }),
+      });
+      if (response.ok) {
+        setListingDialogOpen(false);
+        setListingPrice("");
+        setListingDescription("");
+        setSelectedPropertyForListing(null);
+        fetchMyListings();
+      }
+    } catch (error) {
+      console.error("Error creating listing:", error);
+    }
+  }
+
+  async function removeListing(listingId: string) {
+    try {
+      await fetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      fetchMyListings();
+    } catch (error) {
+      console.error("Error removing listing:", error);
+    }
+  }
+
+  async function removeFromWatchlist(listingId: string) {
+    try {
+      await fetch(`/api/watchlist/${listingId}`, { method: "DELETE" });
+      fetchWatchlist();
+    } catch (error) {
+      console.error("Error removing from watchlist:", error);
+    }
+  }
+
+  async function updateOfferStatus(offerId: string, newStatus: string) {
+    try {
+      await fetch(`/api/offers/${offerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      fetchMyOffers();
+      fetchMyListings();
+    } catch (error) {
+      console.error("Error updating offer:", error);
     }
   }
 
@@ -206,14 +341,26 @@ export default function DashboardPage() {
       </div>
 
       <Tabs defaultValue="properties" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="properties" data-testid="tab-properties">
             <Home className="w-4 h-4 mr-2" />
-            Property Portfolio ({properties.length})
+            Portfolio ({properties.length})
+          </TabsTrigger>
+          <TabsTrigger value="listings" data-testid="tab-listings">
+            <Tag className="w-4 h-4 mr-2" />
+            My Listings ({myListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="watchlist" data-testid="tab-watchlist">
+            <Heart className="w-4 h-4 mr-2" />
+            Watchlist ({watchlist.length})
+          </TabsTrigger>
+          <TabsTrigger value="offers" data-testid="tab-offers">
+            <DollarSign className="w-4 h-4 mr-2" />
+            My Offers ({myOffers.length})
           </TabsTrigger>
           <TabsTrigger value="applications" data-testid="tab-applications">
             <Building2 className="w-4 h-4 mr-2" />
-            Loan Applications ({applications.length})
+            Loans ({applications.length})
           </TabsTrigger>
         </TabsList>
 
@@ -373,6 +520,19 @@ export default function DashboardPage() {
                                   View
                                 </Button>
                               </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPropertyForListing(property);
+                                  setListingPrice(String(property.attomMarketValue || property.estValue || ""));
+                                  setListingDialogOpen(true);
+                                }}
+                                data-testid={`button-list-${property.id}`}
+                              >
+                                <Tag className="w-3 h-3 mr-1" />
+                                List
+                              </Button>
                               {(property.attomStatus === "pending" || property.attomStatus === "failed" || property.attomStatus === "rate_limited") && (
                                 <Button 
                                   variant="ghost" 
@@ -390,6 +550,246 @@ export default function DashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="listings" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-heading font-semibold">My Listings</h2>
+              <p className="text-sm text-muted-foreground">Properties you've listed for sale</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              {myListings.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Tag className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-lg font-medium">No active listings</p>
+                  <p className="text-sm mb-4">List a property from your portfolio to start receiving offers.</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {myListings.map((listing) => (
+                    <div key={listing.id} className="p-4 hover:bg-muted/30 transition-colors" data-testid={`row-listing-${listing.id}`}>
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-primary/10 p-2 rounded-lg text-primary">
+                            <Home className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{listing.property?.address || "Property"}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {listing.property?.city}, {listing.property?.state}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-primary">
+                              ${listing.listPrice?.toLocaleString() || "0"}
+                            </p>
+                            <Badge className={listing.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
+                              {listing.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {listing.offers && listing.offers.length > 0 && (
+                              <Badge className="bg-blue-100 text-blue-700">
+                                {listing.offers.length} offer{listing.offers.length > 1 ? "s" : ""}
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeListing(listing.id)}
+                              data-testid={`button-remove-listing-${listing.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {listing.offers && listing.offers.length > 0 && (
+                        <div className="mt-4 pl-12 space-y-2">
+                          <p className="text-sm font-medium text-muted-foreground">Offers Received:</p>
+                          {listing.offers.map((offer: Offer) => (
+                            <div key={offer.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                              <div>
+                                <p className="font-medium">${offer.offerAmount.toLocaleString()}</p>
+                                {offer.message && <p className="text-xs text-muted-foreground">{offer.message}</p>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={
+                                  offer.status === "accepted" ? "bg-green-100 text-green-700" :
+                                  offer.status === "rejected" ? "bg-red-100 text-red-700" :
+                                  "bg-yellow-100 text-yellow-700"
+                                }>
+                                  {offer.status}
+                                </Badge>
+                                {offer.status === "submitted" && (
+                                  <>
+                                    <Button size="sm" onClick={() => updateOfferStatus(offer.id, "accepted")}>Accept</Button>
+                                    <Button size="sm" variant="outline" onClick={() => updateOfferStatus(offer.id, "rejected")}>Reject</Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="watchlist" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-heading font-semibold">My Watchlist</h2>
+              <p className="text-sm text-muted-foreground">Properties you're interested in</p>
+            </div>
+            <Link href="/marketplace">
+              <Button data-testid="button-browse-marketplace">Browse Marketplace</Button>
+            </Link>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              {watchlist.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Heart className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-lg font-medium">Your watchlist is empty</p>
+                  <p className="text-sm mb-4">Browse the marketplace to find properties you're interested in.</p>
+                  <Link href="/marketplace">
+                    <Button variant="outline">Browse Marketplace</Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {watchlist.map((item) => (
+                    <div key={item.id} className="p-4 hover:bg-muted/30 transition-colors" data-testid={`row-watchlist-${item.id}`}>
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-50 p-2 rounded-lg text-red-500">
+                            <Heart className="w-5 h-5 fill-current" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{item.property?.address || "Property"}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {item.property?.city}, {item.property?.state}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-primary">
+                              ${item.listing?.listPrice?.toLocaleString() || "0"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/marketplace/${item.listingId}`}>
+                              <Button variant="outline" size="sm" data-testid={`button-view-listing-${item.listingId}`}>
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromWatchlist(item.listingId)}
+                              data-testid={`button-unwatch-${item.listingId}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="offers" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-heading font-semibold">My Offers</h2>
+              <p className="text-sm text-muted-foreground">Offers you've made on properties</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              {myOffers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-lg font-medium">No offers made</p>
+                  <p className="text-sm mb-4">Browse the marketplace and make offers on properties you're interested in.</p>
+                  <Link href="/marketplace">
+                    <Button variant="outline">Browse Marketplace</Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {myOffers.map((offer) => (
+                    <div key={offer.id} className="p-4 hover:bg-muted/30 transition-colors" data-testid={`row-offer-${offer.id}`}>
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-50 p-2 rounded-lg text-green-600">
+                            <DollarSign className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{offer.property?.address || "Property"}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {offer.property?.city}, {offer.property?.state}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Offered on {new Date(offer.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Your Offer</p>
+                            <p className="font-bold text-lg text-primary">
+                              ${offer.offerAmount.toLocaleString()}
+                            </p>
+                          </div>
+                          <Badge className={
+                            offer.status === "accepted" ? "bg-green-100 text-green-700" :
+                            offer.status === "rejected" ? "bg-red-100 text-red-700" :
+                            offer.status === "counter" ? "bg-purple-100 text-purple-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }>
+                            {offer.status}
+                          </Badge>
+                          {offer.status === "submitted" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateOfferStatus(offer.id, "withdrawn")}
+                              data-testid={`button-withdraw-${offer.id}`}
+                            >
+                              Withdraw
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -460,6 +860,53 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={listingDialogOpen} onOpenChange={setListingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>List Property for Sale</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {selectedPropertyForListing && (
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="font-medium">{selectedPropertyForListing.address}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedPropertyForListing.city}, {selectedPropertyForListing.state}
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="listPrice">Asking Price ($)</Label>
+              <Input
+                id="listPrice"
+                type="number"
+                placeholder="Enter asking price"
+                value={listingPrice}
+                onChange={(e) => setListingPrice(e.target.value)}
+                data-testid="input-list-price"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the property..."
+                value={listingDescription}
+                onChange={(e) => setListingDescription(e.target.value)}
+                data-testid="input-list-description"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setListingDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={createListing} disabled={!listingPrice} data-testid="button-create-listing">
+                List Property
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
