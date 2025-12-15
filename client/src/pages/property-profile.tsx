@@ -3,7 +3,9 @@ import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock, Save, Search } from "lucide-react";
 
 interface Property {
   id: string;
@@ -34,12 +36,22 @@ interface Property {
 export default function PropertyProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [property, setProperty] = useState<Property | null>(null);
+  const [editedProperty, setEditedProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (id) fetchProperty();
   }, [id]);
+
+  useEffect(() => {
+    if (property && editedProperty) {
+      setHasChanges(JSON.stringify(property) !== JSON.stringify(editedProperty));
+    }
+  }, [property, editedProperty]);
 
   async function fetchProperty() {
     try {
@@ -47,11 +59,34 @@ export default function PropertyProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setProperty(data);
+        setEditedProperty(data);
       }
     } catch (error) {
       console.error("Error fetching property:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveProperty() {
+    if (!id || !editedProperty) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/properties/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedProperty),
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        setProperty(updated);
+        setEditedProperty(updated);
+        setHasChanges(false);
+      }
+    } catch (error) {
+      console.error("Error saving property:", error);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -67,6 +102,17 @@ export default function PropertyProfilePage() {
     } catch (error) {
       console.error("Error enriching property:", error);
       setEnriching(false);
+    }
+  }
+
+  function updateField(field: keyof Property, value: string | number | null) {
+    if (!editedProperty) return;
+    setEditedProperty({ ...editedProperty, [field]: value });
+  }
+
+  function handleSearch() {
+    if (searchQuery.trim()) {
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(searchQuery + " property")}`, "_blank");
     }
   }
 
@@ -87,7 +133,7 @@ export default function PropertyProfilePage() {
     );
   }
 
-  if (!property) {
+  if (!property || !editedProperty) {
     return (
       <div className="container max-w-screen-xl px-4 md:px-8 py-8 min-h-screen">
         <div className="text-center py-12">
@@ -100,11 +146,6 @@ export default function PropertyProfilePage() {
     );
   }
 
-  const displayValue = property.attomMarketValue || property.estValue;
-  const displaySize = property.attomBldgSize || property.sqFt;
-  const displayBeds = property.attomBeds || property.beds;
-  const displayBaths = property.attomBaths || property.baths;
-
   return (
     <div className="container max-w-screen-xl px-4 md:px-8 py-8 min-h-screen">
       <div className="mb-6">
@@ -114,73 +155,49 @@ export default function PropertyProfilePage() {
           </Button>
         </Link>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground" data-testid="text-property-address">
-              {property.address}
+              {editedProperty.address}
             </h1>
             <p className="text-muted-foreground flex items-center gap-1 mt-1">
               <MapPin className="w-4 h-4" />
-              {property.city}, {property.state}
+              {editedProperty.city}, {editedProperty.state}
             </p>
+            
+            <div className="flex items-center gap-2 mt-3">
+              <Input
+                placeholder="Search this address online..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="max-w-sm"
+                data-testid="input-search"
+              />
+              <Button variant="outline" onClick={handleSearch} data-testid="button-search">
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {getStatusBadge(property.attomStatus)}
+            {hasChanges && (
+              <Button onClick={saveProperty} disabled={saving} data-testid="button-save">
+                <Save className={`w-4 h-4 mr-2 ${saving ? 'animate-pulse' : ''}`} />
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            )}
             {property.attomStatus !== "success" && (
-              <Button onClick={enrichProperty} disabled={enriching} data-testid="button-enrich">
+              <Button variant="outline" onClick={enrichProperty} disabled={enriching} data-testid="button-enrich">
                 <RefreshCw className={`w-4 h-4 mr-2 ${enriching ? 'animate-spin' : ''}`} />
-                {enriching ? "Enriching..." : "Enrich with ATTOM"}
+                {enriching ? "Enriching..." : "Enrich"}
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Market Value
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary" data-testid="text-market-value">
-              {displayValue ? `$${displayValue.toLocaleString()}` : "—"}
-            </div>
-            {property.attomMarketValue && property.estValue && property.attomMarketValue !== property.estValue && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Original estimate: ${property.estValue.toLocaleString()}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Ruler className="w-4 h-4" /> Property Size
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-size">
-              {displaySize ? `${displaySize.toLocaleString()} sqft` : "—"}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Year Built
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-year-built">
-              {property.attomYearBuilt || "—"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -190,28 +207,122 @@ export default function PropertyProfilePage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Property Type</p>
-                <p className="font-medium" data-testid="text-property-type">{property.propertyType || "—"}</p>
+                <Label className="text-sm text-muted-foreground">Address</Label>
+                <Input
+                  value={editedProperty.address || ""}
+                  onChange={(e) => updateField("address", e.target.value)}
+                  data-testid="input-address"
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">ATTOM Class</p>
-                <p className="font-medium">{property.attomPropClass || "—"}</p>
+                <Label className="text-sm text-muted-foreground">City</Label>
+                <Input
+                  value={editedProperty.city || ""}
+                  onChange={(e) => updateField("city", e.target.value)}
+                  data-testid="input-city"
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1"><Bed className="w-3 h-3" /> Bedrooms</p>
-                <p className="font-medium" data-testid="text-beds">{displayBeds || "—"}</p>
+                <Label className="text-sm text-muted-foreground">State</Label>
+                <Input
+                  value={editedProperty.state || ""}
+                  onChange={(e) => updateField("state", e.target.value)}
+                  data-testid="input-state"
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1"><Bath className="w-3 h-3" /> Bathrooms</p>
-                <p className="font-medium" data-testid="text-baths">{displayBaths || "—"}</p>
+                <Label className="text-sm text-muted-foreground">Property Type</Label>
+                <Input
+                  value={editedProperty.propertyType || ""}
+                  onChange={(e) => updateField("propertyType", e.target.value)}
+                  data-testid="input-property-type"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground flex items-center gap-1"><Ruler className="w-3 h-3" /> Sq Ft</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.sqFt || ""}
+                  onChange={(e) => updateField("sqFt", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-sqft"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground flex items-center gap-1"><Bed className="w-3 h-3" /> Bedrooms</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.beds || ""}
+                  onChange={(e) => updateField("beds", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-beds"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground flex items-center gap-1"><Bath className="w-3 h-3" /> Bathrooms</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.baths || ""}
+                  onChange={(e) => updateField("baths", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-baths"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> Year Built</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomYearBuilt || ""}
+                  onChange={(e) => updateField("attomYearBuilt", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-year-built"
+                />
               </div>
             </div>
-            {property.attomAssessedValue && (
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Assessed Value</p>
-                <p className="font-medium text-lg">${property.attomAssessedValue.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" /> Valuation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground">Estimated Value ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.estValue || ""}
+                  onChange={(e) => updateField("estValue", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-est-value"
+                />
               </div>
-            )}
+              <div>
+                <Label className="text-sm text-muted-foreground">Estimated Equity ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.estEquity || ""}
+                  onChange={(e) => updateField("estEquity", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-est-equity"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">ATTOM Market Value ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomMarketValue || ""}
+                  onChange={(e) => updateField("attomMarketValue", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-attom-value"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Assessed Value ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomAssessedValue || ""}
+                  onChange={(e) => updateField("attomAssessedValue", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-assessed-value"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -223,35 +334,107 @@ export default function PropertyProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Owner</p>
-                <p className="font-medium" data-testid="text-owner">{property.owner || "—"}</p>
+              <div className="col-span-2">
+                <Label className="text-sm text-muted-foreground">Owner</Label>
+                <Input
+                  value={editedProperty.owner || ""}
+                  onChange={(e) => updateField("owner", e.target.value)}
+                  data-testid="input-owner"
+                />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Owner Occupied</p>
-                <p className="font-medium">{property.ownerOccupied || "—"}</p>
+                <Label className="text-sm text-muted-foreground">Owner Occupied</Label>
+                <select
+                  value={editedProperty.ownerOccupied || ""}
+                  onChange={(e) => updateField("ownerOccupied", e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  data-testid="select-owner-occupied"
+                >
+                  <option value="">—</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Listed for Sale</p>
-                <p className="font-medium">{property.listedForSale || "—"}</p>
+                <Label className="text-sm text-muted-foreground">Listed for Sale</Label>
+                <select
+                  value={editedProperty.listedForSale || ""}
+                  onChange={(e) => updateField("listedForSale", e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  data-testid="select-listed-for-sale"
+                >
+                  <option value="">—</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Foreclosure</p>
-                <p className="font-medium">{property.foreclosure || "—"}</p>
+                <Label className="text-sm text-muted-foreground">Foreclosure</Label>
+                <select
+                  value={editedProperty.foreclosure || ""}
+                  onChange={(e) => updateField("foreclosure", e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  data-testid="select-foreclosure"
+                >
+                  <option value="">—</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
               </div>
             </div>
-            {property.estEquity && (
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Estimated Equity</p>
-                <p className="font-medium text-lg text-green-600">${property.estEquity.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5" /> ATTOM Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground">ATTOM Building Size</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomBldgSize || ""}
+                  onChange={(e) => updateField("attomBldgSize", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-attom-size"
+                />
               </div>
-            )}
+              <div>
+                <Label className="text-sm text-muted-foreground">ATTOM Property Class</Label>
+                <Input
+                  value={editedProperty.attomPropClass || ""}
+                  onChange={(e) => updateField("attomPropClass", e.target.value)}
+                  data-testid="input-attom-class"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">ATTOM Beds</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomBeds || ""}
+                  onChange={(e) => updateField("attomBeds", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-attom-beds"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">ATTOM Baths</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.attomBaths || ""}
+                  onChange={(e) => updateField("attomBaths", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-attom-baths"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {property.attomError && (
-        <Card className="mt-6 border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="py-4">
             <p className="text-sm text-red-700">
               <strong>ATTOM Error:</strong> {property.attomError}

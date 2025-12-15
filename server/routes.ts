@@ -281,6 +281,21 @@ export async function registerRoutes(
     }
   });
 
+  // Update property by ID
+  app.put("/api/properties/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateProperty(req.params.id, req.body);
+      if (!updated) {
+        res.status(404).json({ error: "Property not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating property:", error);
+      res.status(500).json({ error: "Failed to update property" });
+    }
+  });
+
   // Import properties from Excel file
   app.post("/api/properties/import", async (req, res) => {
     try {
