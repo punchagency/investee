@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLoanApplicationSchema, type InsertProperty } from "@shared/schema";
+import { insertLoanApplicationSchema, insertListingSchema, insertOfferSchema, type InsertProperty } from "@shared/schema";
 import { z } from "zod";
 import XLSX from "xlsx";
 import * as fs from "fs";
@@ -434,6 +434,237 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error enriching property:", error);
       res.status(500).json({ error: "Failed to enrich property" });
+    }
+  });
+
+  // =====================
+  // PROPERTY LISTINGS
+  // =====================
+
+  // Create a new listing
+  app.post("/api/listings", async (req, res) => {
+    try {
+      const validatedData = insertListingSchema.parse(req.body);
+      const listing = await storage.createListing(validatedData);
+      res.status(201).json(listing);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid request data", details: error.errors });
+      } else {
+        console.error("Error creating listing:", error);
+        res.status(500).json({ error: "Failed to create listing" });
+      }
+    }
+  });
+
+  // Get all active listings (marketplace)
+  app.get("/api/listings", async (req, res) => {
+    try {
+      const listings = await storage.getAllListings();
+      const listingsWithProperties = await Promise.all(
+        listings.map(async (listing) => {
+          const property = await storage.getProperty(listing.propertyId);
+          return { ...listing, property };
+        })
+      );
+      res.json(listingsWithProperties);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      res.status(500).json({ error: "Failed to fetch listings" });
+    }
+  });
+
+  // Get listings by owner (my listings)
+  app.get("/api/listings/my", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const listings = await storage.getListingsByOwner(userId);
+      const listingsWithProperties = await Promise.all(
+        listings.map(async (listing) => {
+          const property = await storage.getProperty(listing.propertyId);
+          const offers = await storage.getOffersByListing(listing.id);
+          return { ...listing, property, offers };
+        })
+      );
+      res.json(listingsWithProperties);
+    } catch (error) {
+      console.error("Error fetching my listings:", error);
+      res.status(500).json({ error: "Failed to fetch my listings" });
+    }
+  });
+
+  // Get single listing
+  app.get("/api/listings/:id", async (req, res) => {
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        res.status(404).json({ error: "Listing not found" });
+        return;
+      }
+      const property = await storage.getProperty(listing.propertyId);
+      const offers = await storage.getOffersByListing(listing.id);
+      res.json({ ...listing, property, offers });
+    } catch (error) {
+      console.error("Error fetching listing:", error);
+      res.status(500).json({ error: "Failed to fetch listing" });
+    }
+  });
+
+  // Update listing
+  app.patch("/api/listings/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateListing(req.params.id, req.body);
+      if (!updated) {
+        res.status(404).json({ error: "Listing not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      res.status(500).json({ error: "Failed to update listing" });
+    }
+  });
+
+  // Delete listing
+  app.delete("/api/listings/:id", async (req, res) => {
+    try {
+      await storage.deleteListing(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      res.status(500).json({ error: "Failed to delete listing" });
+    }
+  });
+
+  // =====================
+  // WATCHLIST
+  // =====================
+
+  // Get user's watchlist
+  app.get("/api/watchlist", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const watchlist = await storage.getWatchlistByUser(userId);
+      const watchlistWithListings = await Promise.all(
+        watchlist.map(async (item) => {
+          const listing = await storage.getListing(item.listingId);
+          const property = listing ? await storage.getProperty(listing.propertyId) : null;
+          return { ...item, listing, property };
+        })
+      );
+      res.json(watchlistWithListings);
+    } catch (error) {
+      console.error("Error fetching watchlist:", error);
+      res.status(500).json({ error: "Failed to fetch watchlist" });
+    }
+  });
+
+  // Add to watchlist
+  app.post("/api/watchlist", async (req, res) => {
+    try {
+      const { listingId } = req.body;
+      const userId = "default_user";
+      
+      const exists = await storage.isInWatchlist(userId, listingId);
+      if (exists) {
+        res.status(400).json({ error: "Already in watchlist" });
+        return;
+      }
+      
+      const item = await storage.addToWatchlist({ userId, listingId });
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error adding to watchlist:", error);
+      res.status(500).json({ error: "Failed to add to watchlist" });
+    }
+  });
+
+  // Remove from watchlist
+  app.delete("/api/watchlist/:listingId", async (req, res) => {
+    try {
+      const userId = "default_user";
+      await storage.removeFromWatchlist(userId, req.params.listingId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from watchlist:", error);
+      res.status(500).json({ error: "Failed to remove from watchlist" });
+    }
+  });
+
+  // Check if listing is in watchlist
+  app.get("/api/watchlist/check/:listingId", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const isWatched = await storage.isInWatchlist(userId, req.params.listingId);
+      res.json({ isWatched });
+    } catch (error) {
+      console.error("Error checking watchlist:", error);
+      res.status(500).json({ error: "Failed to check watchlist" });
+    }
+  });
+
+  // =====================
+  // OFFERS
+  // =====================
+
+  // Create offer
+  app.post("/api/offers", async (req, res) => {
+    try {
+      const validatedData = insertOfferSchema.parse(req.body);
+      const offer = await storage.createOffer(validatedData);
+      res.status(201).json(offer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid request data", details: error.errors });
+      } else {
+        console.error("Error creating offer:", error);
+        res.status(500).json({ error: "Failed to create offer" });
+      }
+    }
+  });
+
+  // Get my offers (as buyer)
+  app.get("/api/offers/my", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const offers = await storage.getOffersByBuyer(userId);
+      const offersWithListings = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          const property = listing ? await storage.getProperty(listing.propertyId) : null;
+          return { ...offer, listing, property };
+        })
+      );
+      res.json(offersWithListings);
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+      res.status(500).json({ error: "Failed to fetch my offers" });
+    }
+  });
+
+  // Get offers for a listing
+  app.get("/api/listings/:listingId/offers", async (req, res) => {
+    try {
+      const offers = await storage.getOffersByListing(req.params.listingId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "Failed to fetch offers" });
+    }
+  });
+
+  // Update offer status
+  app.patch("/api/offers/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateOffer(req.params.id, req.body);
+      if (!updated) {
+        res.status(404).json({ error: "Offer not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "Failed to update offer" });
     }
   });
 
