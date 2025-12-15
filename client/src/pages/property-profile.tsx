@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock, Save, Search } from "lucide-react";
+import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock, Save, Search, Map } from "lucide-react";
+import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
 interface Property {
   id: string;
@@ -42,6 +43,11 @@ interface Property {
   monthlyHoa: number | null;
 }
 
+const mapContainerStyle = {
+  width: "100%",
+  height: "300px",
+};
+
 export default function PropertyProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [property, setProperty] = useState<Property | null>(null);
@@ -51,10 +57,52 @@ export default function PropertyProfilePage() {
   const [enriching, setEnriching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [mapsApiKey, setMapsApiKey] = useState<string>("");
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: mapsApiKey,
+  });
+
+  useEffect(() => {
+    fetchMapsApiKey();
+  }, []);
 
   useEffect(() => {
     if (id) fetchProperty();
   }, [id]);
+
+  useEffect(() => {
+    if (property && isLoaded && mapsApiKey) {
+      geocodeAddress();
+    }
+  }, [property, isLoaded, mapsApiKey]);
+
+  async function fetchMapsApiKey() {
+    try {
+      const response = await fetch("/api/config/maps");
+      if (response.ok) {
+        const data = await response.json();
+        setMapsApiKey(data.apiKey);
+      }
+    } catch (error) {
+      console.error("Error fetching maps API key:", error);
+    }
+  }
+
+  async function geocodeAddress() {
+    if (!property || !window.google) return;
+    const geocoder = new window.google.maps.Geocoder();
+    const fullAddress = `${property.address}, ${property.city}, ${property.state}`;
+    
+    geocoder.geocode({ address: fullAddress }, (results, status) => {
+      if (status === "OK" && results && results[0]) {
+        const location = results[0].geometry.location;
+        setCoordinates({ lat: location.lat(), lng: location.lng() });
+      }
+    });
+  }
 
   useEffect(() => {
     if (property && editedProperty) {
@@ -205,6 +253,25 @@ export default function PropertyProfilePage() {
           </div>
         </div>
       </div>
+
+      {isLoaded && coordinates && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Map className="w-5 h-5" /> Property Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={coordinates}
+              zoom={16}
+            >
+              <Marker position={coordinates} />
+            </GoogleMap>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <Card>

@@ -153,6 +153,16 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Get Google Maps API key (restricted by HTTP referrer in Google Cloud Console)
+  app.get("/api/config/maps", (req, res) => {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: "Google Maps API key not configured" });
+      return;
+    }
+    res.json({ apiKey });
+  });
+
   // Create a new loan application
   app.post("/api/applications", async (req, res) => {
     try {
