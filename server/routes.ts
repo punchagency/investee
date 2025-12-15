@@ -266,6 +266,21 @@ export async function registerRoutes(
     }
   });
 
+  // Get single property by ID
+  app.get("/api/properties/:id", async (req, res) => {
+    try {
+      const property = await storage.getProperty(req.params.id);
+      if (!property) {
+        res.status(404).json({ error: "Property not found" });
+        return;
+      }
+      res.json(property);
+    } catch (error) {
+      console.error("Error fetching property:", error);
+      res.status(500).json({ error: "Failed to fetch property" });
+    }
+  });
+
   // Import properties from Excel file
   app.post("/api/properties/import", async (req, res) => {
     try {

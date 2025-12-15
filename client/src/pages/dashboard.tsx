@@ -357,17 +357,28 @@ export default function DashboardPage() {
                             )}
                           </td>
                           <td className="p-4">
-                            {(property.attomStatus === "pending" || property.attomStatus === "failed" || property.attomStatus === "rate_limited") && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => enrichSingleProperty(property.id)}
-                                data-testid={`button-enrich-${property.id}`}
-                              >
-                                <RefreshCw className="w-3 h-3 mr-1" />
-                                Retry
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <Link href={`/property/${property.id}`}>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  data-testid={`button-view-${property.id}`}
+                                >
+                                  View
+                                </Button>
+                              </Link>
+                              {(property.attomStatus === "pending" || property.attomStatus === "failed" || property.attomStatus === "rate_limited") && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => enrichSingleProperty(property.id)}
+                                  data-testid={`button-enrich-${property.id}`}
+                                >
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Retry
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
