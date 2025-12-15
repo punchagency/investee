@@ -48,6 +48,59 @@ const mapContainerStyle = {
   height: "300px",
 };
 
+function PropertyStreetView({ address, city, state }: { address: string; city: string | null; state: string | null }) {
+  const [mapsApiKey, setMapsApiKey] = useState<string>("");
+  const [hasImagery, setHasImagery] = useState<boolean | null>(null);
+  const fullAddress = `${address}, ${city || ""}, ${state || ""}`;
+
+  useEffect(() => {
+    async function fetchKeyAndCheckImagery() {
+      try {
+        const response = await fetch("/api/config/maps");
+        if (response.ok) {
+          const data = await response.json();
+          setMapsApiKey(data.apiKey);
+          
+          const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(fullAddress)}&key=${data.apiKey}`;
+          const metaResponse = await fetch(metadataUrl);
+          const metaData = await metaResponse.json();
+          setHasImagery(metaData.status === "OK");
+        }
+      } catch (error) {
+        console.error("Error fetching street view:", error);
+        setHasImagery(false);
+      }
+    }
+    fetchKeyAndCheckImagery();
+  }, [fullAddress]);
+
+  if (hasImagery === null) {
+    return (
+      <div className="h-[300px] bg-muted flex items-center justify-center rounded-lg">
+        <p className="text-muted-foreground">Loading street view...</p>
+      </div>
+    );
+  }
+
+  if (!hasImagery || !mapsApiKey) {
+    return (
+      <div className="h-[300px] bg-muted flex items-center justify-center rounded-lg">
+        <p className="text-muted-foreground">Street view not available for this location</p>
+      </div>
+    );
+  }
+
+  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=640x300&location=${encodeURIComponent(fullAddress)}&heading=0&pitch=0&fov=90&key=${mapsApiKey}`;
+
+  return (
+    <img 
+      src={streetViewUrl} 
+      alt={`Street view of ${address}`}
+      className="w-full h-[300px] object-cover rounded-lg"
+    />
+  );
+}
+
 function PropertyMap({ address, city, state }: { address: string; city: string | null; state: string | null }) {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [mapsApiKey, setMapsApiKey] = useState<string>("");
@@ -295,16 +348,28 @@ export default function PropertyProfilePage() {
         </div>
       </div>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Map className="w-5 h-5" /> Property Location
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PropertyMap address={editedProperty.address} city={editedProperty.city} state={editedProperty.state} />
-        </CardContent>
-      </Card>
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="w-5 h-5" /> Street View
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PropertyStreetView address={editedProperty.address} city={editedProperty.city} state={editedProperty.state} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Map className="w-5 h-5" /> Property Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PropertyMap address={editedProperty.address} city={editedProperty.city} state={editedProperty.state} />
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <Card>
