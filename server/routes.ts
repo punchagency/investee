@@ -276,6 +276,15 @@ export async function registerRoutes(
         return;
       }
 
+      const normalizedPath = path.normalize(filePath);
+      const allowedPrefixes = ["attached_assets/", "attached_assets\\"];
+      const isAllowed = allowedPrefixes.some(prefix => normalizedPath.startsWith(prefix));
+      
+      if (!isAllowed || normalizedPath.includes("..")) {
+        res.status(403).json({ error: "Access denied: only files from attached_assets are allowed" });
+        return;
+      }
+
       if (!fs.existsSync(filePath)) {
         res.status(404).json({ error: "File not found" });
         return;

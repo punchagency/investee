@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [propertiesLoading, setPropertiesLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchApplications();
@@ -123,7 +125,18 @@ export default function DashboardPage() {
 
   const successCount = properties.filter(p => p.attomStatus === "success").length;
   const pendingCount = properties.filter(p => p.attomStatus === "pending" || p.attomStatus === "rate_limited").length;
+  const failedCount = properties.filter(p => p.attomStatus === "failed").length;
   const totalPortfolioValue = properties.reduce((sum, p) => sum + (p.attomMarketValue || p.estValue || 0), 0);
+
+  const propertyTypes = Array.from(new Set(properties.map(p => p.propertyType).filter(Boolean)));
+
+  const filteredProperties = properties.filter(p => {
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "pending" && (p.attomStatus === "pending" || p.attomStatus === "rate_limited")) ||
+      (statusFilter !== "pending" && p.attomStatus === statusFilter);
+    const matchesType = typeFilter === "all" || p.propertyType === typeFilter;
+    return matchesStatus && matchesType;
+  });
 
   return (
     <div className="container max-w-screen-2xl px-4 md:px-8 py-8 min-h-screen">
@@ -205,23 +218,51 @@ export default function DashboardPage() {
         </TabsList>
 
         <TabsContent value="properties" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-heading font-semibold">My Properties</h2>
-              {pendingCount > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {pendingCount} properties pending ATTOM enrichment
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                {successCount} enriched, {pendingCount} pending, {failedCount} failed
+              </p>
             </div>
-            <Button 
-              onClick={enrichAllProperties} 
-              disabled={enriching || pendingCount === 0}
-              data-testid="button-enrich-all"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${enriching ? 'animate-spin' : ''}`} />
-              {enriching ? "Enriching..." : "Enrich All Properties"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="select-status-filter"
+                >
+                  <option value="all">All ({properties.length})</option>
+                  <option value="success">Enriched ({successCount})</option>
+                  <option value="pending">Pending ({pendingCount})</option>
+                  <option value="failed">Failed ({failedCount})</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Type:</span>
+                <select 
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="border rounded-md px-3 py-1.5 text-sm bg-background"
+                  data-testid="select-type-filter"
+                >
+                  <option value="all">All Types</option>
+                  {propertyTypes.map(type => (
+                    <option key={type} value={type || ""}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <Button 
+                onClick={enrichAllProperties} 
+                disabled={enriching || pendingCount === 0}
+                data-testid="button-enrich-all"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${enriching ? 'animate-spin' : ''}`} />
+                {enriching ? "Enriching..." : "Enrich All"}
+              </Button>
+            </div>
           </div>
 
           <Card>
@@ -235,6 +276,11 @@ export default function DashboardPage() {
                   <Home className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p className="text-lg font-medium">No properties in portfolio</p>
                   <p className="text-sm mb-4">Import properties from Excel to get started.</p>
+                </div>
+              ) : filteredProperties.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p className="text-lg font-medium">No properties match filters</p>
+                  <p className="text-sm mb-4">Try adjusting your filter criteria.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -252,7 +298,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {properties.map((property) => (
+                      {filteredProperties.map((property) => (
                         <tr 
                           key={property.id} 
                           className="border-t hover:bg-muted/30 transition-colors"
