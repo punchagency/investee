@@ -31,6 +31,12 @@ interface Property {
   attomBaths: number | null;
   attomPropClass: string | null;
   attomError: string | null;
+  attomAvmValue: number | null;
+  attomAvmHigh: number | null;
+  attomAvmLow: number | null;
+  attomAvmConfidence: number | null;
+  attomTaxAmount: number | null;
+  attomTaxYear: number | null;
   annualTaxes: number | null;
   annualInsurance: number | null;
   monthlyHoa: number | null;
@@ -287,10 +293,49 @@ export default function PropertyProfilePage() {
               <DollarSign className="w-5 h-5" /> Valuation
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {editedProperty.attomAvmValue && (
+              <div className="bg-gradient-to-r from-[#1C49A6]/10 to-[#99C054]/10 rounded-lg p-4 border border-[#1C49A6]/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-[#1C49A6]">Investee Estimated Property Value</span>
+                  {editedProperty.attomAvmConfidence && (
+                    <Badge variant="outline" className="bg-white">
+                      {editedProperty.attomAvmConfidence}% Confidence
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-3xl font-bold text-[#1C49A6]">
+                  ${editedProperty.attomAvmValue.toLocaleString()}
+                </div>
+                {(editedProperty.attomAvmLow || editedProperty.attomAvmHigh) && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Range: ${editedProperty.attomAvmLow?.toLocaleString() || "N/A"} - ${editedProperty.attomAvmHigh?.toLocaleString() || "N/A"}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {editedProperty.attomTaxAmount && (
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-amber-700">Investee Estimated Annual Taxes</span>
+                    <div className="text-2xl font-bold text-amber-800">
+                      ${editedProperty.attomTaxAmount.toLocaleString()}
+                    </div>
+                  </div>
+                  {editedProperty.attomTaxYear && (
+                    <Badge variant="outline" className="bg-white text-amber-700 border-amber-300">
+                      Tax Year {editedProperty.attomTaxYear}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm text-muted-foreground">Estimated Value ($)</Label>
+                <Label className="text-sm text-muted-foreground">Your Est. Value ($)</Label>
                 <Input
                   type="number"
                   value={editedProperty.estValue || ""}
@@ -308,7 +353,7 @@ export default function PropertyProfilePage() {
                 />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">ATTOM Market Value ($)</Label>
+                <Label className="text-sm text-muted-foreground">Market Value ($)</Label>
                 <Input
                   type="number"
                   value={editedProperty.attomMarketValue || ""}
@@ -326,7 +371,7 @@ export default function PropertyProfilePage() {
                 />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">Annual Taxes ($)</Label>
+                <Label className="text-sm text-muted-foreground">Annual Taxes (Override) ($)</Label>
                 <Input
                   type="number"
                   value={editedProperty.annualTaxes || ""}

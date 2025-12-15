@@ -32,7 +32,7 @@ async function enrichPropertyWithAttom(
     const address1 = encodeURIComponent(address);
     const address2 = encodeURIComponent(`${city}, ${state}`);
     
-    const [basicResponse, assessmentResponse] = await Promise.all([
+    const [basicResponse, assessmentResponse, avmResponse] = await Promise.all([
       fetch(
         `${ATTOM_API_BASE}/property/basicprofile?address1=${address1}&address2=${address2}`,
         {
@@ -44,6 +44,15 @@ async function enrichPropertyWithAttom(
       ),
       fetch(
         `${ATTOM_API_BASE}/assessment/detail?address1=${address1}&address2=${address2}`,
+        {
+          headers: {
+            Accept: "application/json",
+            apikey: apiKey,
+          },
+        }
+      ),
+      fetch(
+        `${ATTOM_API_BASE}/attomavm/detail?address1=${address1}&address2=${address2}`,
         {
           headers: {
             Accept: "application/json",
@@ -81,11 +90,30 @@ async function enrichPropertyWithAttom(
     }
 
     let annualTaxes: number | null = null;
+    let attomTaxAmount: number | null = null;
+    let attomTaxYear: number | null = null;
     if (assessmentResponse.ok) {
       const assessmentData = await assessmentResponse.json();
       const assessment = assessmentData.property?.[0]?.assessment;
       if (assessment?.tax?.taxamt) {
         annualTaxes = Math.round(assessment.tax.taxamt);
+        attomTaxAmount = Math.round(assessment.tax.taxamt);
+        attomTaxYear = assessment.tax.taxyear || null;
+      }
+    }
+
+    let attomAvmValue: number | null = null;
+    let attomAvmHigh: number | null = null;
+    let attomAvmLow: number | null = null;
+    let attomAvmConfidence: number | null = null;
+    if (avmResponse.ok) {
+      const avmData = await avmResponse.json();
+      const avm = avmData.property?.[0]?.avm?.amount;
+      if (avm) {
+        attomAvmValue = avm.value || null;
+        attomAvmHigh = avm.high || null;
+        attomAvmLow = avm.low || null;
+        attomAvmConfidence = avm.scr || null;
       }
     }
 
@@ -101,6 +129,12 @@ async function enrichPropertyWithAttom(
       attomPropClass: prop.summary?.propClass,
       attomLastSalePrice: prop.sale?.amount?.saleamt,
       attomLastSaleDate: prop.sale?.saleTransDate,
+      attomAvmValue,
+      attomAvmHigh,
+      attomAvmLow,
+      attomAvmConfidence,
+      attomTaxAmount,
+      attomTaxYear,
       annualTaxes: annualTaxes,
       attomData: prop,
       attomSyncedAt: new Date(),
