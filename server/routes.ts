@@ -29,18 +29,31 @@ async function enrichPropertyWithAttom(
   }
 
   try {
-    const fullAddress = `${address}, ${city}, ${state}`;
-    const response = await fetch(
-      `${ATTOM_API_BASE}/property/basicprofile?address=${encodeURIComponent(fullAddress)}`,
-      {
-        headers: {
-          Accept: "application/json",
-          apikey: apiKey,
-        },
-      }
-    );
+    const address1 = encodeURIComponent(address);
+    const address2 = encodeURIComponent(`${city}, ${state}`);
+    
+    const [basicResponse, assessmentResponse] = await Promise.all([
+      fetch(
+        `${ATTOM_API_BASE}/property/basicprofile?address1=${address1}&address2=${address2}`,
+        {
+          headers: {
+            Accept: "application/json",
+            apikey: apiKey,
+          },
+        }
+      ),
+      fetch(
+        `${ATTOM_API_BASE}/assessment/detail?address1=${address1}&address2=${address2}`,
+        {
+          headers: {
+            Accept: "application/json",
+            apikey: apiKey,
+          },
+        }
+      )
+    ]);
 
-    if (response.status === 429) {
+    if (basicResponse.status === 429) {
       await storage.updateProperty(propertyId, {
         attomStatus: "rate_limited",
         attomError: "Rate limited - will retry later",
@@ -48,16 +61,16 @@ async function enrichPropertyWithAttom(
       return;
     }
 
-    if (!response.ok) {
+    if (!basicResponse.ok) {
       await storage.updateProperty(propertyId, {
         attomStatus: "failed",
-        attomError: `API returned ${response.status}`,
+        attomError: `API returned ${basicResponse.status}`,
       });
       return;
     }
 
-    const data = await response.json();
-    const prop = data.property?.[0];
+    const basicData = await basicResponse.json();
+    const prop = basicData.property?.[0];
 
     if (!prop) {
       await storage.updateProperty(propertyId, {
@@ -65,6 +78,15 @@ async function enrichPropertyWithAttom(
         attomError: "No property data returned",
       });
       return;
+    }
+
+    let annualTaxes: number | null = null;
+    if (assessmentResponse.ok) {
+      const assessmentData = await assessmentResponse.json();
+      const assessment = assessmentData.property?.[0]?.assessment;
+      if (assessment?.tax?.taxamt) {
+        annualTaxes = Math.round(assessment.tax.taxamt);
+      }
     }
 
     await storage.updateProperty(propertyId, {
@@ -79,6 +101,7 @@ async function enrichPropertyWithAttom(
       attomPropClass: prop.summary?.propClass,
       attomLastSalePrice: prop.sale?.amount?.saleamt,
       attomLastSaleDate: prop.sale?.saleTransDate,
+      annualTaxes: annualTaxes,
       attomData: prop,
       attomSyncedAt: new Date(),
       attomError: null,
