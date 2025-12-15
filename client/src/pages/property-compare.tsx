@@ -26,6 +26,9 @@ interface Property {
   attomBldgSize: number | null;
   attomBeds: number | null;
   attomBaths: number | null;
+  annualTaxes: number | null;
+  annualInsurance: number | null;
+  monthlyHoa: number | null;
 }
 
 interface DSCRAnalysis {
@@ -33,6 +36,10 @@ interface DSCRAnalysis {
   annualRent: number;
   monthlyDebt: number;
   annualDebt: number;
+  monthlyTaxes: number;
+  monthlyInsurance: number;
+  monthlyHoa: number;
+  totalMonthlyExpenses: number;
   dscr: number;
   cashFlow: number;
 }
@@ -58,7 +65,7 @@ export default function PropertyComparePage() {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>(ids);
   
-  const [dscrInputs, setDscrInputs] = useState<Record<string, { rent: number; loanAmount: number; rate: number; term: number }>>({});
+  const [dscrInputs, setDscrInputs] = useState<Record<string, { rent: number; loanAmount: number; rate: number; term: number; annualTaxes: number; annualInsurance: number; monthlyHoa: number }>>({});
   const [fixFlipInputs, setFixFlipInputs] = useState<Record<string, { rehabCost: number; holdingMonths: number; arvPercent: number }>>({});
 
   useEffect(() => {
@@ -97,7 +104,15 @@ export default function PropertyComparePage() {
             const value = data.attomMarketValue || data.estValue || 500000;
             setDscrInputs(prev => ({
               ...prev,
-              [id]: { rent: estimateRent(value), loanAmount: value * 0.75, rate: 7.5, term: 30 }
+              [id]: { 
+                rent: estimateRent(value), 
+                loanAmount: value * 0.75, 
+                rate: 7.5, 
+                term: 30,
+                annualTaxes: data.annualTaxes || Math.round(value * 0.0125),
+                annualInsurance: data.annualInsurance || Math.round(value * 0.005),
+                monthlyHoa: data.monthlyHoa || 0
+              }
             }));
           }
           if (!fixFlipInputs[id]) {
@@ -119,16 +134,29 @@ export default function PropertyComparePage() {
   }
 
   function calculateDSCR(propId: string, propertyValue: number): DSCRAnalysis {
-    const inputs = dscrInputs[propId] || { rent: estimateRent(propertyValue), loanAmount: propertyValue * 0.75, rate: 7.5, term: 30 };
+    const defaultInputs = { 
+      rent: estimateRent(propertyValue), 
+      loanAmount: propertyValue * 0.75, 
+      rate: 7.5, 
+      term: 30,
+      annualTaxes: Math.round(propertyValue * 0.0125),
+      annualInsurance: Math.round(propertyValue * 0.005),
+      monthlyHoa: 0
+    };
+    const inputs = dscrInputs[propId] || defaultInputs;
     const monthlyRent = inputs.rent;
     const annualRent = monthlyRent * 12;
     const monthlyRate = inputs.rate / 100 / 12;
     const numPayments = inputs.term * 12;
     const monthlyDebt = inputs.loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
     const annualDebt = monthlyDebt * 12;
-    const dscr = annualRent / annualDebt;
-    const cashFlow = monthlyRent - monthlyDebt;
-    return { monthlyRent, annualRent, monthlyDebt, annualDebt, dscr, cashFlow };
+    const monthlyTaxes = inputs.annualTaxes / 12;
+    const monthlyInsurance = inputs.annualInsurance / 12;
+    const monthlyHoa = inputs.monthlyHoa;
+    const totalMonthlyExpenses = monthlyDebt + monthlyTaxes + monthlyInsurance + monthlyHoa;
+    const dscr = annualRent / (annualDebt + inputs.annualTaxes + inputs.annualInsurance + (monthlyHoa * 12));
+    const cashFlow = monthlyRent - totalMonthlyExpenses;
+    return { monthlyRent, annualRent, monthlyDebt, annualDebt, monthlyTaxes, monthlyInsurance, monthlyHoa, totalMonthlyExpenses, dscr, cashFlow };
   }
 
   function calculateFixFlip(propId: string, propertyValue: number): FixFlipAnalysis {
@@ -265,7 +293,16 @@ export default function PropertyComparePage() {
               <div className={`grid gap-6 ${properties.length === 1 ? 'md:grid-cols-1' : properties.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                 {properties.map(property => {
                   const value = property.attomMarketValue || property.estValue || 500000;
-                  const inputs = dscrInputs[property.id] || { rent: estimateRent(value), loanAmount: value * 0.75, rate: 7.5, term: 30 };
+                  const defaultInputs = { 
+                    rent: estimateRent(value), 
+                    loanAmount: value * 0.75, 
+                    rate: 7.5, 
+                    term: 30,
+                    annualTaxes: Math.round(value * 0.0125),
+                    annualInsurance: Math.round(value * 0.005),
+                    monthlyHoa: 0
+                  };
+                  const inputs = dscrInputs[property.id] || defaultInputs;
                   const analysis = calculateDSCR(property.id, value);
                   
                   return (
@@ -321,6 +358,42 @@ export default function PropertyComparePage() {
                             data-testid={`input-term-${property.id}`}
                           />
                         </div>
+                        <div>
+                          <Label className="text-xs">Annual Taxes ($)</Label>
+                          <Input
+                            type="number"
+                            value={inputs.annualTaxes}
+                            onChange={(e) => setDscrInputs(prev => ({
+                              ...prev,
+                              [property.id]: { ...inputs, annualTaxes: Number(e.target.value) }
+                            }))}
+                            data-testid={`input-taxes-${property.id}`}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Annual Insurance ($)</Label>
+                          <Input
+                            type="number"
+                            value={inputs.annualInsurance}
+                            onChange={(e) => setDscrInputs(prev => ({
+                              ...prev,
+                              [property.id]: { ...inputs, annualInsurance: Number(e.target.value) }
+                            }))}
+                            data-testid={`input-insurance-${property.id}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-xs">Monthly HOA ($)</Label>
+                          <Input
+                            type="number"
+                            value={inputs.monthlyHoa}
+                            onChange={(e) => setDscrInputs(prev => ({
+                              ...prev,
+                              [property.id]: { ...inputs, monthlyHoa: Number(e.target.value) }
+                            }))}
+                            data-testid={`input-hoa-${property.id}`}
+                          />
+                        </div>
                       </div>
                       <div className="pt-3 border-t space-y-2">
                         <div className="flex justify-between">
@@ -330,10 +403,18 @@ export default function PropertyComparePage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Monthly Payment</span>
+                          <span className="text-sm text-muted-foreground">P&I Payment</span>
                           <span className="font-semibold">${Math.round(analysis.monthlyDebt).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Taxes + Ins + HOA</span>
+                          <span className="font-semibold">${Math.round(analysis.monthlyTaxes + analysis.monthlyInsurance + analysis.monthlyHoa).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Total Monthly</span>
+                          <span className="font-semibold">${Math.round(analysis.totalMonthlyExpenses).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t">
                           <span className="text-sm text-muted-foreground">Monthly Cash Flow</span>
                           <span className={`font-bold ${analysis.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             ${Math.round(analysis.cashFlow).toLocaleString()}

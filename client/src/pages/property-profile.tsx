@@ -31,6 +31,9 @@ interface Property {
   attomBaths: number | null;
   attomPropClass: string | null;
   attomError: string | null;
+  annualTaxes: number | null;
+  annualInsurance: number | null;
+  monthlyHoa: number | null;
 }
 
 export default function PropertyProfilePage() {
@@ -320,6 +323,33 @@ export default function PropertyProfilePage() {
                   value={editedProperty.attomAssessedValue || ""}
                   onChange={(e) => updateField("attomAssessedValue", e.target.value ? Number(e.target.value) : null)}
                   data-testid="input-assessed-value"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Annual Taxes ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.annualTaxes || ""}
+                  onChange={(e) => updateField("annualTaxes", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-annual-taxes"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Annual Insurance ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.annualInsurance || ""}
+                  onChange={(e) => updateField("annualInsurance", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-annual-insurance"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Monthly HOA ($)</Label>
+                <Input
+                  type="number"
+                  value={editedProperty.monthlyHoa || ""}
+                  onChange={(e) => updateField("monthlyHoa", e.target.value ? Number(e.target.value) : null)}
+                  data-testid="input-monthly-hoa"
                 />
               </div>
             </div>
