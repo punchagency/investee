@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Building2, PieChart, Search, Menu, X, MapPin } from "lucide-react";
+import { Building2, PieChart, Search, Menu, X, MapPin, Bell } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Home", icon: Building2 },
     { href: "/property-search", label: "Property Search", icon: MapPin },
     { href: "/calculator", label: "Calculator", icon: Search },
+    { href: "/alerts", label: "Alerts", icon: Bell },
     { href: "/learning", label: "Learn", icon: Search },
   ];
 

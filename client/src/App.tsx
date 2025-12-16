@@ -17,6 +17,7 @@ import LoanDetailPage from "@/pages/loan-detail";
 import PropertyProfilePage from "@/pages/property-profile";
 import PropertyComparePage from "@/pages/property-compare";
 import MarketplacePage from "@/pages/marketplace";
+import AlertsPage from "@/pages/alerts";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/property/:id" component={PropertyProfilePage} />
         <Route path="/compare" component={PropertyComparePage} />
         <Route path="/marketplace" component={MarketplacePage} />
+        <Route path="/alerts" component={AlertsPage} />
         <Route path="/terms" component={LegalPage} />
         <Route path="/privacy" component={LegalPage} />
         <Route component={NotFound} />
