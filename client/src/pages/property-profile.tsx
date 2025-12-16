@@ -768,6 +768,96 @@ export default function PropertyProfilePage() {
 
           {property.rentcastStatus === "success" ? (
             <div className="space-y-6">
+              {property.rentcastPropertyData && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Home className="w-5 h-5" /> Property Details (RentCast)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {property.rentcastPropertyData.bedrooms != null && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <Bed className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold">{property.rentcastPropertyData.bedrooms}</div>
+                          <div className="text-xs text-muted-foreground">Bedrooms</div>
+                        </div>
+                      )}
+                      {property.rentcastPropertyData.bathrooms != null && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <Bath className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold">{property.rentcastPropertyData.bathrooms}</div>
+                          <div className="text-xs text-muted-foreground">Bathrooms</div>
+                        </div>
+                      )}
+                      {property.rentcastPropertyData.squareFootage != null && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <Ruler className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold">{property.rentcastPropertyData.squareFootage.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Sq Ft</div>
+                        </div>
+                      )}
+                      {property.rentcastPropertyData.yearBuilt != null && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <Calendar className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold">{property.rentcastPropertyData.yearBuilt}</div>
+                          <div className="text-xs text-muted-foreground">Year Built</div>
+                        </div>
+                      )}
+                      {property.rentcastPropertyData.lotSize != null && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <MapPin className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold">{property.rentcastPropertyData.lotSize.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Lot Size (sq ft)</div>
+                        </div>
+                      )}
+                      {property.rentcastPropertyData.propertyType && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <Building2 className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                          <div className="text-lg font-semibold capitalize">{property.rentcastPropertyData.propertyType}</div>
+                          <div className="text-xs text-muted-foreground">Property Type</div>
+                        </div>
+                      )}
+                    </div>
+                    {(property.rentcastPropertyData.features || property.rentcastPropertyData.pool || property.rentcastPropertyData.garage) && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="text-sm font-medium mb-2">Features</div>
+                        <div className="flex flex-wrap gap-2">
+                          {property.rentcastPropertyData.pool && (
+                            <Badge variant="secondary">Pool</Badge>
+                          )}
+                          {property.rentcastPropertyData.garage && (
+                            <Badge variant="secondary">Garage</Badge>
+                          )}
+                          {property.rentcastPropertyData.basement && (
+                            <Badge variant="secondary">Basement</Badge>
+                          )}
+                          {property.rentcastPropertyData.fireplace && (
+                            <Badge variant="secondary">Fireplace</Badge>
+                          )}
+                          {property.rentcastPropertyData.airConditioning && (
+                            <Badge variant="secondary">A/C</Badge>
+                          )}
+                          {property.rentcastPropertyData.heating && (
+                            <Badge variant="secondary">Heating</Badge>
+                          )}
+                          {Array.isArray(property.rentcastPropertyData.features) && property.rentcastPropertyData.features.map((feature: string, idx: number) => (
+                            <Badge key={idx} variant="secondary">{feature}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {property.rentcastPropertyData.ownerName && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="text-sm font-medium mb-1">Owner</div>
+                        <div className="text-muted-foreground">{property.rentcastPropertyData.ownerName}</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
@@ -820,7 +910,7 @@ export default function PropertyProfilePage() {
                 </Card>
               </div>
 
-              {property.rentcastTaxHistory && Array.isArray(property.rentcastTaxHistory) && property.rentcastTaxHistory.length > 0 && (
+              {property.rentcastPropertyData?.taxAssessments && typeof property.rentcastPropertyData.taxAssessments === 'object' && Object.keys(property.rentcastPropertyData.taxAssessments).length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -838,13 +928,16 @@ export default function PropertyProfilePage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(property.rentcastTaxHistory).slice(0, 5).map(([year, data]: [string, any]) => (
-                            <tr key={year} className="border-b">
-                              <td className="py-2">{year}</td>
-                              <td className="text-right py-2">${data?.value?.toLocaleString() || "N/A"}</td>
-                              <td className="text-right py-2">${data?.tax?.toLocaleString() || "N/A"}</td>
-                            </tr>
-                          ))}
+                          {Object.entries(property.rentcastPropertyData.taxAssessments)
+                            .sort(([a], [b]) => Number(b) - Number(a))
+                            .slice(0, 5)
+                            .map(([year, data]: [string, any]) => (
+                              <tr key={year} className="border-b">
+                                <td className="py-2">{year}</td>
+                                <td className="text-right py-2">${data?.value?.toLocaleString() || "N/A"}</td>
+                                <td className="text-right py-2">${data?.tax?.toLocaleString() || "N/A"}</td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
