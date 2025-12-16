@@ -820,38 +820,44 @@ export default function PropertyProfilePage() {
                         </div>
                       )}
                     </div>
-                    {(property.rentcastPropertyData.features || property.rentcastPropertyData.pool || property.rentcastPropertyData.garage) && (
+                    {property.rentcastPropertyData.features && (
                       <div className="mt-4 pt-4 border-t">
                         <div className="text-sm font-medium mb-2">Features</div>
                         <div className="flex flex-wrap gap-2">
-                          {property.rentcastPropertyData.pool && (
+                          {property.rentcastPropertyData.features.pool && (
                             <Badge variant="secondary">Pool</Badge>
                           )}
-                          {property.rentcastPropertyData.garage && (
+                          {property.rentcastPropertyData.features.garage && (
                             <Badge variant="secondary">Garage</Badge>
                           )}
-                          {property.rentcastPropertyData.basement && (
+                          {property.rentcastPropertyData.features.basement && (
                             <Badge variant="secondary">Basement</Badge>
                           )}
-                          {property.rentcastPropertyData.fireplace && (
+                          {property.rentcastPropertyData.features.fireplace && (
                             <Badge variant="secondary">Fireplace</Badge>
                           )}
-                          {property.rentcastPropertyData.airConditioning && (
+                          {property.rentcastPropertyData.features.cooling && (
                             <Badge variant="secondary">A/C</Badge>
                           )}
-                          {property.rentcastPropertyData.heating && (
+                          {property.rentcastPropertyData.features.heating && (
                             <Badge variant="secondary">Heating</Badge>
                           )}
-                          {Array.isArray(property.rentcastPropertyData.features) && property.rentcastPropertyData.features.map((feature: string, idx: number) => (
-                            <Badge key={idx} variant="secondary">{feature}</Badge>
-                          ))}
+                          {property.rentcastPropertyData.features.coolingType && (
+                            <Badge variant="outline">{property.rentcastPropertyData.features.coolingType} Cooling</Badge>
+                          )}
+                          {property.rentcastPropertyData.features.heatingType && (
+                            <Badge variant="outline">{property.rentcastPropertyData.features.heatingType} Heating</Badge>
+                          )}
+                          {property.rentcastPropertyData.features.architectureType && (
+                            <Badge variant="outline">{property.rentcastPropertyData.features.architectureType}</Badge>
+                          )}
                         </div>
                       </div>
                     )}
-                    {property.rentcastPropertyData.ownerName && (
+                    {property.rentcastPropertyData.owner?.names && property.rentcastPropertyData.owner.names.length > 0 && (
                       <div className="mt-4 pt-4 border-t">
                         <div className="text-sm font-medium mb-1">Owner</div>
-                        <div className="text-muted-foreground">{property.rentcastPropertyData.ownerName}</div>
+                        <div className="text-muted-foreground">{property.rentcastPropertyData.owner.names.join(", ")}</div>
                       </div>
                     )}
                   </CardContent>
