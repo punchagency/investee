@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Home, MapPin, Calendar, Ruler, DollarSign, Bed, Bath, Building2 } from "lucide-react";
+import { Search, Loader2, Home, MapPin, Calendar, Ruler, DollarSign, Bed, Bath, Building2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { searchProperty, type AttomPropertyData } from "@/services/attom";
 import { Link } from "wouter";
@@ -17,6 +18,15 @@ export default function PropertySearch() {
   const [property, setProperty] = useState<AttomPropertyData | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+
+  const { data: savedProperties = [], isLoading: isLoadingProperties } = useQuery({
+    queryKey: ["/api/properties"],
+    queryFn: async () => {
+      const res = await fetch("/api/properties");
+      if (!res.ok) throw new Error("Failed to fetch properties");
+      return res.json();
+    },
+  });
 
   const handleSearch = async () => {
     if (!address.trim()) {
@@ -334,6 +344,86 @@ export default function PropertySearch() {
             </Card>
           </div>
         )}
+
+        {/* Saved Properties Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Your Saved Properties
+            </CardTitle>
+            <CardDescription>
+              Properties from your dashboard - click to view full details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingProperties ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : savedProperties.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Home className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No properties saved yet.</p>
+                <p className="text-sm">Search for a property above and add it to your dashboard.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {savedProperties.map((prop: any) => (
+                  <Link key={prop.id} href={`/property/${prop.id}`}>
+                    <Card 
+                      className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary"
+                      data-testid={`card-property-${prop.id}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-sm line-clamp-2">
+                            {prop.address}
+                          </h3>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {prop.city}, {prop.state} {prop.zipCode}
+                          </div>
+                          {prop.propertyType && (
+                            <Badge variant="secondary" className="text-xs">
+                              {prop.propertyType}
+                            </Badge>
+                          )}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {prop.bedrooms && (
+                              <span className="flex items-center gap-1">
+                                <Bed className="w-3 h-3" /> {prop.bedrooms}
+                              </span>
+                            )}
+                            {prop.bathrooms && (
+                              <span className="flex items-center gap-1">
+                                <Bath className="w-3 h-3" /> {prop.bathrooms}
+                              </span>
+                            )}
+                            {prop.squareFeet && (
+                              <span className="flex items-center gap-1">
+                                <Ruler className="w-3 h-3" /> {prop.squareFeet.toLocaleString()} sqft
+                              </span>
+                            )}
+                          </div>
+                          {(prop.purchasePrice || prop.investeeEstimatedValue) && (
+                            <div className="flex items-center gap-1 text-green-600 font-medium mt-2">
+                              <DollarSign className="w-3 h-3" />
+                              ${(prop.purchasePrice || prop.investeeEstimatedValue)?.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   );
