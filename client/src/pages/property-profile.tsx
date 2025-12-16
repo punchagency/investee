@@ -961,6 +961,7 @@ export default function PropertyProfilePage() {
                           <tr className="border-b">
                             <th className="text-left py-2 font-medium">Address</th>
                             <th className="text-right py-2 font-medium">Price</th>
+                            <th className="text-right py-2 font-medium">Listed Date</th>
                             <th className="text-right py-2 font-medium">Sq Ft</th>
                             <th className="text-right py-2 font-medium">Distance</th>
                           </tr>
@@ -970,6 +971,7 @@ export default function PropertyProfilePage() {
                             <tr key={idx} className="border-b">
                               <td className="py-2">{comp.formattedAddress || comp.address || "N/A"}</td>
                               <td className="text-right py-2">${comp.price?.toLocaleString() || "N/A"}</td>
+                              <td className="text-right py-2">{comp.listedDate ? new Date(comp.listedDate).toLocaleDateString() : "N/A"}</td>
                               <td className="text-right py-2">{comp.squareFootage?.toLocaleString() || "N/A"}</td>
                               <td className="text-right py-2">{comp.distance ? `${comp.distance.toFixed(2)} mi` : "N/A"}</td>
                             </tr>
@@ -995,6 +997,7 @@ export default function PropertyProfilePage() {
                           <tr className="border-b">
                             <th className="text-left py-2 font-medium">Address</th>
                             <th className="text-right py-2 font-medium">Rent</th>
+                            <th className="text-right py-2 font-medium">Listed Date</th>
                             <th className="text-right py-2 font-medium">Beds/Baths</th>
                             <th className="text-right py-2 font-medium">Distance</th>
                           </tr>
@@ -1004,6 +1007,7 @@ export default function PropertyProfilePage() {
                             <tr key={idx} className="border-b">
                               <td className="py-2">{comp.formattedAddress || comp.address || "N/A"}</td>
                               <td className="text-right py-2">${comp.price?.toLocaleString() || "N/A"}/mo</td>
+                              <td className="text-right py-2">{comp.listedDate ? new Date(comp.listedDate).toLocaleDateString() : "N/A"}</td>
                               <td className="text-right py-2">{comp.bedrooms || "?"}/{comp.bathrooms || "?"}</td>
                               <td className="text-right py-2">{comp.distance ? `${comp.distance.toFixed(2)} mi` : "N/A"}</td>
                             </tr>
