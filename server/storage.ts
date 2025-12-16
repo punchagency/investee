@@ -1,10 +1,11 @@
 import { 
-  loanApplications, properties, propertyListings, propertyWatchlist, propertyOffers,
+  loanApplications, properties, propertyListings, propertyWatchlist, propertyOffers, propertyAlerts,
   type LoanApplication, type InsertLoanApplication, 
   type Property, type InsertProperty,
   type PropertyListing, type InsertListing,
   type PropertyWatchlistItem, type InsertWatchlist,
-  type PropertyOffer, type InsertOffer
+  type PropertyOffer, type InsertOffer,
+  type PropertyAlert, type InsertAlert
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -42,6 +43,12 @@ export interface IStorage {
   updateOffer(id: string, updates: Partial<PropertyOffer>): Promise<PropertyOffer | undefined>;
   
   countRentcastSyncedProperties(): Promise<number>;
+
+  createAlert(alert: InsertAlert): Promise<PropertyAlert>;
+  getAlert(id: string): Promise<PropertyAlert | undefined>;
+  getAlertsByUser(userId: string): Promise<PropertyAlert[]>;
+  updateAlert(id: string, updates: Partial<PropertyAlert>): Promise<PropertyAlert | undefined>;
+  deleteAlert(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -271,6 +278,44 @@ export class DatabaseStorage implements IStorage {
       .from(properties)
       .where(eq(properties.rentcastStatus, "success"));
     return result[0]?.count || 0;
+  }
+
+  async createAlert(alert: InsertAlert): Promise<PropertyAlert> {
+    const [created] = await db
+      .insert(propertyAlerts)
+      .values(alert)
+      .returning();
+    return created;
+  }
+
+  async getAlert(id: string): Promise<PropertyAlert | undefined> {
+    const [alert] = await db
+      .select()
+      .from(propertyAlerts)
+      .where(eq(propertyAlerts.id, id));
+    return alert || undefined;
+  }
+
+  async getAlertsByUser(userId: string): Promise<PropertyAlert[]> {
+    const alerts = await db
+      .select()
+      .from(propertyAlerts)
+      .where(eq(propertyAlerts.userId, userId))
+      .orderBy(desc(propertyAlerts.createdAt));
+    return alerts;
+  }
+
+  async updateAlert(id: string, updates: Partial<PropertyAlert>): Promise<PropertyAlert | undefined> {
+    const [updated] = await db
+      .update(propertyAlerts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(propertyAlerts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAlert(id: string): Promise<void> {
+    await db.delete(propertyAlerts).where(eq(propertyAlerts.id, id));
   }
 }
 

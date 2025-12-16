@@ -157,3 +157,34 @@ export const insertOfferSchema = createInsertSchema(propertyOffers).omit({
 
 export type InsertOffer = z.infer<typeof insertOfferSchema>;
 export type PropertyOffer = typeof propertyOffers.$inferSelect;
+
+export const propertyAlerts = pgTable("property_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().default("default_user"),
+  name: text("name").notNull(),
+  isActive: text("is_active").notNull().default("true"),
+  minPrice: integer("min_price"),
+  maxPrice: integer("max_price"),
+  minBeds: integer("min_beds"),
+  maxBeds: integer("max_beds"),
+  minBaths: real("min_baths"),
+  maxBaths: real("max_baths"),
+  minSqFt: integer("min_sq_ft"),
+  maxSqFt: integer("max_sq_ft"),
+  propertyTypes: text("property_types").array(),
+  cities: text("cities").array(),
+  states: text("states").array(),
+  postalCodes: text("postal_codes").array(),
+  keywords: text("keywords"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAlertSchema = createInsertSchema(propertyAlerts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type PropertyAlert = typeof propertyAlerts.$inferSelect;
