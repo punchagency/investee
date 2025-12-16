@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock, Save, Search, Map } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Home, MapPin, Ruler, Bed, Bath, DollarSign, Calendar, Building2, RefreshCw, CheckCircle, XCircle, Clock, Save, Search, Map, TrendingUp, History, BarChart3 } from "lucide-react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
 interface Property {
@@ -14,6 +15,7 @@ interface Property {
   address: string;
   city: string | null;
   state: string | null;
+  postalCode: string | null;
   sqFt: number | null;
   beds: number | null;
   baths: number | null;
@@ -41,6 +43,19 @@ interface Property {
   annualTaxes: number | null;
   annualInsurance: number | null;
   monthlyHoa: number | null;
+  rentcastStatus: string | null;
+  rentcastValueEstimate: number | null;
+  rentcastValueLow: number | null;
+  rentcastValueHigh: number | null;
+  rentcastRentEstimate: number | null;
+  rentcastRentLow: number | null;
+  rentcastRentHigh: number | null;
+  rentcastPropertyData: any | null;
+  rentcastTaxHistory: any | null;
+  rentcastSaleComps: any | null;
+  rentcastRentComps: any | null;
+  rentcastMarketData: any | null;
+  rentcastError: string | null;
 }
 
 const mapContainerStyle = {
@@ -191,8 +206,10 @@ export default function PropertyProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [enrichingRentcast, setEnrichingRentcast] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (id) fetchProperty();
@@ -253,6 +270,27 @@ export default function PropertyProfilePage() {
     } catch (error) {
       console.error("Error enriching property:", error);
       setEnriching(false);
+    }
+  }
+
+  async function enrichRentcast() {
+    if (!id) return;
+    setEnrichingRentcast(true);
+    try {
+      const response = await fetch(`/api/properties/${id}/enrich-rentcast`, { method: "POST" });
+      if (response.status === 429) {
+        const data = await response.json();
+        alert(data.message || "RentCast limit reached. Only 10 properties can be synced.");
+        setEnrichingRentcast(false);
+        return;
+      }
+      setTimeout(() => {
+        fetchProperty();
+        setEnrichingRentcast(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error enriching with RentCast:", error);
+      setEnrichingRentcast(false);
     }
   }
 
@@ -371,6 +409,17 @@ export default function PropertyProfilePage() {
         </Card>
       </div>
 
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="overview" data-testid="tab-overview">
+            <Home className="w-4 h-4 mr-2" /> Investee Data
+          </TabsTrigger>
+          <TabsTrigger value="rentcast" data-testid="tab-rentcast">
+            <BarChart3 className="w-4 h-4 mr-2" /> RentCast Data
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -677,11 +726,254 @@ export default function PropertyProfilePage() {
         <Card className="border-red-200 bg-red-50">
           <CardContent className="py-4">
             <p className="text-sm text-red-700">
-              <strong>ATTOM Error:</strong> {property.attomError}
+              <strong>Investee Error:</strong> {property.attomError}
             </p>
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="rentcast" className="mt-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold">RentCast Property Data</h3>
+              {property.rentcastStatus === "success" ? (
+                <Badge className="bg-green-100 text-green-700"><CheckCircle className="w-3 h-3 mr-1" /> Synced</Badge>
+              ) : property.rentcastStatus === "failed" ? (
+                <Badge className="bg-red-100 text-red-700"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>
+              ) : (
+                <Badge className="bg-gray-100 text-gray-700"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={enrichRentcast} 
+              disabled={enrichingRentcast}
+              data-testid="button-enrich-rentcast"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${enrichingRentcast ? 'animate-spin' : ''}`} />
+              {enrichingRentcast ? "Fetching..." : "Fetch RentCast Data"}
+            </Button>
+          </div>
+
+          {property.rentcastError && (
+            <Card className="border-red-200 bg-red-50 mb-6">
+              <CardContent className="py-4">
+                <p className="text-sm text-red-700">
+                  <strong>RentCast Error:</strong> {property.rentcastError}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {property.rentcastStatus === "success" ? (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" /> Value Estimate
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {property.rentcastValueEstimate ? (
+                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+                        <div className="text-sm font-medium text-purple-700 mb-1">RentCast Estimated Value</div>
+                        <div className="text-3xl font-bold text-purple-800">
+                          ${property.rentcastValueEstimate.toLocaleString()}
+                        </div>
+                        {(property.rentcastValueLow || property.rentcastValueHigh) && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Range: ${property.rentcastValueLow?.toLocaleString() || "N/A"} - ${property.rentcastValueHigh?.toLocaleString() || "N/A"}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No value estimate available</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" /> Rent Estimate
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {property.rentcastRentEstimate ? (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                        <div className="text-sm font-medium text-green-700 mb-1">RentCast Monthly Rent</div>
+                        <div className="text-3xl font-bold text-green-800">
+                          ${property.rentcastRentEstimate.toLocaleString()}/mo
+                        </div>
+                        {(property.rentcastRentLow || property.rentcastRentHigh) && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Range: ${property.rentcastRentLow?.toLocaleString() || "N/A"} - ${property.rentcastRentHigh?.toLocaleString() || "N/A"}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No rent estimate available</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {property.rentcastTaxHistory && Array.isArray(property.rentcastTaxHistory) && property.rentcastTaxHistory.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="w-5 h-5" /> Tax History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 font-medium">Year</th>
+                            <th className="text-right py-2 font-medium">Assessed Value</th>
+                            <th className="text-right py-2 font-medium">Tax Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(property.rentcastTaxHistory).slice(0, 5).map(([year, data]: [string, any]) => (
+                            <tr key={year} className="border-b">
+                              <td className="py-2">{year}</td>
+                              <td className="text-right py-2">${data?.value?.toLocaleString() || "N/A"}</td>
+                              <td className="text-right py-2">${data?.tax?.toLocaleString() || "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {property.rentcastSaleComps && Array.isArray(property.rentcastSaleComps) && property.rentcastSaleComps.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5" /> Sale Comparables
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 font-medium">Address</th>
+                            <th className="text-right py-2 font-medium">Price</th>
+                            <th className="text-right py-2 font-medium">Sq Ft</th>
+                            <th className="text-right py-2 font-medium">Distance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {property.rentcastSaleComps.slice(0, 5).map((comp: any, idx: number) => (
+                            <tr key={idx} className="border-b">
+                              <td className="py-2">{comp.formattedAddress || comp.address || "N/A"}</td>
+                              <td className="text-right py-2">${comp.price?.toLocaleString() || "N/A"}</td>
+                              <td className="text-right py-2">{comp.squareFootage?.toLocaleString() || "N/A"}</td>
+                              <td className="text-right py-2">{comp.distance ? `${comp.distance.toFixed(2)} mi` : "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {property.rentcastRentComps && Array.isArray(property.rentcastRentComps) && property.rentcastRentComps.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" /> Rent Comparables
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 font-medium">Address</th>
+                            <th className="text-right py-2 font-medium">Rent</th>
+                            <th className="text-right py-2 font-medium">Beds/Baths</th>
+                            <th className="text-right py-2 font-medium">Distance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {property.rentcastRentComps.slice(0, 5).map((comp: any, idx: number) => (
+                            <tr key={idx} className="border-b">
+                              <td className="py-2">{comp.formattedAddress || comp.address || "N/A"}</td>
+                              <td className="text-right py-2">${comp.price?.toLocaleString() || "N/A"}/mo</td>
+                              <td className="text-right py-2">{comp.bedrooms || "?"}/{comp.bathrooms || "?"}</td>
+                              <td className="text-right py-2">{comp.distance ? `${comp.distance.toFixed(2)} mi` : "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {property.rentcastMarketData && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5" /> Market Data
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {property.rentcastMarketData.medianSalePrice && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-xs text-muted-foreground">Median Sale Price</div>
+                          <div className="text-lg font-semibold">${property.rentcastMarketData.medianSalePrice.toLocaleString()}</div>
+                        </div>
+                      )}
+                      {property.rentcastMarketData.medianRent && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-xs text-muted-foreground">Median Rent</div>
+                          <div className="text-lg font-semibold">${property.rentcastMarketData.medianRent.toLocaleString()}/mo</div>
+                        </div>
+                      )}
+                      {property.rentcastMarketData.averageDaysOnMarket && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-xs text-muted-foreground">Avg Days on Market</div>
+                          <div className="text-lg font-semibold">{property.rentcastMarketData.averageDaysOnMarket}</div>
+                        </div>
+                      )}
+                      {property.rentcastMarketData.saleToListRatio && (
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-xs text-muted-foreground">Sale-to-List Ratio</div>
+                          <div className="text-lg font-semibold">{(property.rentcastMarketData.saleToListRatio * 100).toFixed(1)}%</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <Card className="bg-muted/50">
+              <CardContent className="py-12 text-center">
+                <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No RentCast Data Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Click "Fetch RentCast Data" to get property value estimates, rent estimates, comparables, tax history, and market data.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Note: RentCast data is limited to 10 properties.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

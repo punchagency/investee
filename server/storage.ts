@@ -7,7 +7,7 @@ import {
   type PropertyOffer, type InsertOffer
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication>;
@@ -40,6 +40,8 @@ export interface IStorage {
   getOffersByListing(listingId: string): Promise<PropertyOffer[]>;
   getOffersByBuyer(buyerId: string): Promise<PropertyOffer[]>;
   updateOffer(id: string, updates: Partial<PropertyOffer>): Promise<PropertyOffer | undefined>;
+  
+  countRentcastSyncedProperties(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -261,6 +263,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(propertyOffers.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async countRentcastSyncedProperties(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.rentcastStatus, "success"));
+    return result[0]?.count || 0;
   }
 }
 

@@ -599,12 +599,26 @@ export async function registerRoutes(
     }
   });
 
-  // Enrich a single property with RentCast
+  // Enrich a single property with RentCast (limited to 10 properties total)
   app.post("/api/properties/:id/enrich-rentcast", async (req, res) => {
     try {
       const property = await storage.getProperty(req.params.id);
       if (!property) {
         res.status(404).json({ error: "Property not found" });
+        return;
+      }
+
+      if (property.rentcastStatus === "success") {
+        res.json(property);
+        return;
+      }
+
+      const syncedCount = await storage.countRentcastSyncedProperties();
+      if (syncedCount >= 10) {
+        res.status(429).json({ 
+          error: "RentCast limit reached", 
+          message: "RentCast data is limited to 10 properties. You have already synced 10 properties." 
+        });
         return;
       }
 
@@ -624,13 +638,24 @@ export async function registerRoutes(
     }
   });
 
-  // Enrich first 10 properties with RentCast
+  // Enrich properties with RentCast (respects 10-property global limit)
   app.post("/api/properties/enrich-rentcast-batch", async (req, res) => {
     try {
+      const syncedCount = await storage.countRentcastSyncedProperties();
+      const remainingSlots = 10 - syncedCount;
+
+      if (remainingSlots <= 0) {
+        res.status(429).json({ 
+          error: "RentCast limit reached", 
+          message: "RentCast data is limited to 10 properties. You have already synced 10 properties." 
+        });
+        return;
+      }
+
       const allProperties = await storage.getAllProperties();
       const toEnrich = allProperties
         .filter((p) => p.rentcastStatus !== "success")
-        .slice(0, 10);
+        .slice(0, remainingSlots);
 
       if (toEnrich.length === 0) {
         res.json({ success: true, message: "No properties to enrich", enriched: 0 });
@@ -639,7 +664,7 @@ export async function registerRoutes(
 
       res.json({
         success: true,
-        message: `RentCast enrichment started for ${toEnrich.length} properties (max 10)`,
+        message: `RentCast enrichment started for ${toEnrich.length} properties (${syncedCount} already synced, ${10 - syncedCount} slots remaining)`,
         total: toEnrich.length,
       });
 
