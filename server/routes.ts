@@ -289,7 +289,8 @@ export async function registerRoutes(
     }
 
     try {
-      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodeURIComponent(address)}&heading=0&pitch=0&fov=90&key=${apiKey}`;
+      // Use source=outdoor to get outdoor imagery and let Google auto-determine best heading facing the building
+      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodeURIComponent(address)}&pitch=0&fov=90&source=outdoor&key=${apiKey}`;
       const response = await fetch(streetViewUrl);
       
       if (!response.ok) {
