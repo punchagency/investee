@@ -289,7 +289,7 @@ export async function registerRoutes(
     }
 
     try {
-      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodeURIComponent(address)}&key=${apiKey}`;
+      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodeURIComponent(address)}&heading=0&pitch=0&fov=90&key=${apiKey}`;
       const response = await fetch(streetViewUrl);
       
       if (!response.ok) {
