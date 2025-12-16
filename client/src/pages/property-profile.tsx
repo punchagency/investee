@@ -821,38 +821,34 @@ export default function PropertyProfilePage() {
                       )}
                     </div>
                     {property.rentcastPropertyData.features && (
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="text-sm font-medium mb-2">Features</div>
-                        <div className="flex flex-wrap gap-2">
-                          {property.rentcastPropertyData.features.pool && (
-                            <Badge variant="secondary">Pool</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.garage && (
-                            <Badge variant="secondary">Garage</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.basement && (
-                            <Badge variant="secondary">Basement</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.fireplace && (
-                            <Badge variant="secondary">Fireplace</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.cooling && (
-                            <Badge variant="secondary">A/C</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.heating && (
-                            <Badge variant="secondary">Heating</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.coolingType && (
-                            <Badge variant="outline">{property.rentcastPropertyData.features.coolingType} Cooling</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.heatingType && (
-                            <Badge variant="outline">{property.rentcastPropertyData.features.heatingType} Heating</Badge>
-                          )}
-                          {property.rentcastPropertyData.features.architectureType && (
-                            <Badge variant="outline">{property.rentcastPropertyData.features.architectureType}</Badge>
-                          )}
-                        </div>
-                      </div>
+                      (() => {
+                        const f = property.rentcastPropertyData.features;
+                        const hasFeatures = f.pool || f.garage || f.basement || f.fireplace || f.cooling || f.heating || f.coolingType || f.heatingType || f.architectureType || f.roofType || f.foundationType || f.exteriorType || f.flooringTypes || f.parkingSpaces;
+                        if (!hasFeatures) return null;
+                        return (
+                          <div className="mt-4 pt-4 border-t">
+                            <div className="text-sm font-medium mb-2">Features</div>
+                            <div className="flex flex-wrap gap-2">
+                              {f.pool && <Badge variant="secondary">Pool</Badge>}
+                              {f.garage && <Badge variant="secondary">Garage</Badge>}
+                              {f.basement && <Badge variant="secondary">Basement</Badge>}
+                              {f.fireplace && <Badge variant="secondary">Fireplace</Badge>}
+                              {f.cooling && <Badge variant="secondary">A/C</Badge>}
+                              {f.heating && <Badge variant="secondary">Heating</Badge>}
+                              {f.coolingType && <Badge variant="outline">{f.coolingType} Cooling</Badge>}
+                              {f.heatingType && <Badge variant="outline">{f.heatingType} Heating</Badge>}
+                              {f.architectureType && <Badge variant="outline">{f.architectureType}</Badge>}
+                              {f.roofType && <Badge variant="outline">{f.roofType} Roof</Badge>}
+                              {f.foundationType && <Badge variant="outline">{f.foundationType} Foundation</Badge>}
+                              {f.exteriorType && <Badge variant="outline">{f.exteriorType} Exterior</Badge>}
+                              {f.parkingSpaces && <Badge variant="outline">{f.parkingSpaces} Parking Spaces</Badge>}
+                              {Array.isArray(f.flooringTypes) && f.flooringTypes.map((floor: string, idx: number) => (
+                                <Badge key={idx} variant="outline">{floor} Flooring</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()
                     )}
                     {property.rentcastPropertyData.owner?.names && property.rentcastPropertyData.owner.names.length > 0 && (
                       <div className="mt-4 pt-4 border-t">
