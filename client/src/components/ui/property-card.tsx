@@ -85,7 +85,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-muted-foreground text-xs uppercase tracking-wider">Rehab</span>
-              <span className="font-medium">{property.rehab > 0 ? `$${property.rehab.toLocaleString()}` : "Turnkey"}</span>
+              <span className="font-medium">{property.rehab && property.rehab > 0 ? `$${property.rehab.toLocaleString()}` : "Turnkey"}</span>
             </div>
              <div className="flex flex-col">
               <span className="text-muted-foreground text-xs uppercase tracking-wider">Taxes/yr</span>
