@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { searchProperties } from "@/lib/mockApi";
 import { PropertyCard } from "@/components/ui/property-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, SlidersHorizontal, Search, MapPin, Bed, Bath, DollarSign, Building2, Home, X } from "lucide-react";
+import { Loader2, SlidersHorizontal, Search, MapPin, Bed, Bath, DollarSign, Building2, Home, X, ExternalLink, Ruler } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -16,7 +15,7 @@ import { searchProperty, type AttomPropertyData } from "@/services/attom";
 
 export default function SearchPage() {
   const [filters, setFilters] = useState({
-    investmentType: "DSCR",
+    investmentType: "All",
     state: "All",
     rehabType: "All"
   });
@@ -26,10 +25,28 @@ export default function SearchPage() {
   const [attomProperty, setAttomProperty] = useState<AttomPropertyData | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ["properties", filters],
-    queryFn: () => searchProperties(filters),
+  const { data: allProperties = [], isLoading } = useQuery({
+    queryKey: ["/api/properties"],
+    queryFn: async () => {
+      const res = await fetch("/api/properties");
+      if (!res.ok) throw new Error("Failed to fetch properties");
+      return res.json();
+    },
   });
+
+  const properties = useMemo(() => {
+    let filtered = [...allProperties];
+    
+    if (filters.investmentType !== "All") {
+      filtered = filtered.filter((p: any) => p.investmentType === filters.investmentType);
+    }
+    
+    if (filters.state !== "All") {
+      filtered = filtered.filter((p: any) => p.state === filters.state);
+    }
+    
+    return filtered;
+  }, [allProperties, filters]);
 
   const handleAttomSearch = async () => {
     if (!address.trim()) {
@@ -250,7 +267,7 @@ export default function SearchPage() {
                 variant="ghost" 
                 size="sm" 
                 className="text-xs h-8"
-                onClick={() => setFilters({ investmentType: "DSCR", state: "All", rehabType: "All" })}
+                onClick={() => setFilters({ investmentType: "All", state: "All", rehabType: "All" })}
               >
                 Reset
               </Button>
@@ -267,6 +284,7 @@ export default function SearchPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="All">All Types</SelectItem>
                     <SelectItem value="DSCR">DSCR Rental</SelectItem>
                     <SelectItem value="Fix & Flip">Fix & Flip</SelectItem>
                   </SelectContent>
@@ -284,10 +302,9 @@ export default function SearchPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All States</SelectItem>
-                    <SelectItem value="PA">Pennsylvania</SelectItem>
-                    <SelectItem value="GA">Georgia</SelectItem>
-                    <SelectItem value="FL">Florida</SelectItem>
-                    <SelectItem value="TX">Texas</SelectItem>
+                    {Array.from(new Set(allProperties.map((p: any) => p.state).filter(Boolean))).sort().map((state: any) => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -322,7 +339,7 @@ export default function SearchPage() {
         <div className="flex-1">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-heading font-bold text-foreground">
-              {filters.investmentType} Opportunities
+              {filters.investmentType === "All" ? "All" : filters.investmentType} Properties
             </h2>
             <span className="text-muted-foreground text-sm">
               {isLoading ? "Searching..." : `${properties?.length || 0} properties found`}
@@ -342,7 +359,7 @@ export default function SearchPage() {
           ) : (
             <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 text-center">
               <p className="text-lg font-medium text-muted-foreground">No properties found matching your criteria.</p>
-              <Button variant="link" onClick={() => setFilters({ investmentType: "DSCR", state: "All", rehabType: "All" })}>
+              <Button variant="link" onClick={() => setFilters({ investmentType: "All", state: "All", rehabType: "All" })}>
                 Clear Filters
               </Button>
             </div>
