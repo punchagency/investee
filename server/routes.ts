@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLoanApplicationSchema, insertListingSchema, insertOfferSchema, type InsertProperty } from "@shared/schema";
+import { insertLoanApplicationSchema, insertListingSchema, insertOfferSchema, insertAlertSchema, type InsertProperty } from "@shared/schema";
 import { z } from "zod";
 import XLSX from "xlsx";
 import * as fs from "fs";
@@ -914,6 +914,78 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating offer:", error);
       res.status(500).json({ error: "Failed to update offer" });
+    }
+  });
+
+  // ===== Property Alerts =====
+  
+  // Get all alerts for current user
+  app.get("/api/alerts", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const alerts = await storage.getAlertsByUser(userId);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+      res.status(500).json({ error: "Failed to fetch alerts" });
+    }
+  });
+
+  // Create a new alert
+  app.post("/api/alerts", async (req, res) => {
+    try {
+      const userId = "default_user";
+      const parsed = insertAlertSchema.safeParse({ ...req.body, userId });
+      if (!parsed.success) {
+        res.status(400).json({ error: "Invalid alert data", details: parsed.error.flatten() });
+        return;
+      }
+      const alert = await storage.createAlert(parsed.data);
+      res.status(201).json(alert);
+    } catch (error) {
+      console.error("Error creating alert:", error);
+      res.status(500).json({ error: "Failed to create alert" });
+    }
+  });
+
+  // Get single alert
+  app.get("/api/alerts/:id", async (req, res) => {
+    try {
+      const alert = await storage.getAlert(req.params.id);
+      if (!alert) {
+        res.status(404).json({ error: "Alert not found" });
+        return;
+      }
+      res.json(alert);
+    } catch (error) {
+      console.error("Error fetching alert:", error);
+      res.status(500).json({ error: "Failed to fetch alert" });
+    }
+  });
+
+  // Update an alert
+  app.patch("/api/alerts/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateAlert(req.params.id, req.body);
+      if (!updated) {
+        res.status(404).json({ error: "Alert not found" });
+        return;
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating alert:", error);
+      res.status(500).json({ error: "Failed to update alert" });
+    }
+  });
+
+  // Delete an alert
+  app.delete("/api/alerts/:id", async (req, res) => {
+    try {
+      await storage.deleteAlert(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting alert:", error);
+      res.status(500).json({ error: "Failed to delete alert" });
     }
   });
 
