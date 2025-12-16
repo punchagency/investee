@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,32 +6,20 @@ import { MapPin, ArrowRight, TrendingUp, Home, Hammer, Bed, Bath, Ruler } from "
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 
-import dscr1 from "@assets/stock_images/rental_property_apar_495de18b.jpg";
-import dscr2 from "@assets/stock_images/rental_property_apar_66527c4c.jpg";
-import dscr3 from "@assets/stock_images/rental_property_apar_8e1f2e7e.jpg";
-
-import fixflip1 from "@assets/stock_images/fixer_upper_house_re_05fbbfad.jpg";
-import fixflip2 from "@assets/stock_images/fixer_upper_house_re_0bd8e163.jpg";
-import fixflip3 from "@assets/stock_images/fixer_upper_house_re_1ed060ca.jpg";
-
-const allImages = [dscr1, dscr2, dscr3, fixflip1, fixflip2, fixflip3];
-const dscrImages = [dscr1, dscr2, dscr3];
-const fixFlipImages = [fixflip1, fixflip2, fixflip3];
+import fallbackImg from "@assets/stock_images/rental_property_apar_495de18b.jpg";
 
 interface PropertyCardProps {
   property: any;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const getImagePool = () => {
-    if (property.investmentType === "DSCR") return dscrImages;
-    if (property.investmentType === "Fix & Flip") return fixFlipImages;
-    return allImages;
-  };
-  const imagePool = getImagePool();
-  const idNum = typeof property.id === 'string' ? property.id.charCodeAt(0) : (property.id || 0);
-  const imageIndex = idNum % imagePool.length;
-  const propertyImage = imagePool[imageIndex];
+  const [imgError, setImgError] = useState(false);
+  
+  const fullAddress = property.city && property.state 
+    ? `${property.address}, ${property.city}, ${property.state}` 
+    : property.address;
+  
+  const streetViewUrl = `/api/streetview?address=${encodeURIComponent(fullAddress)}&size=400x300`;
   
   const displayPrice = property.purchasePrice || property.attomAvmValue || property.rentcastValueEstimate || property.estValue || 0;
   const displayRent = property.estRent || property.rentcastRentEstimate || property.estimatedMonthlyRent;
@@ -48,9 +37,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
       <Card className="overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300 bg-card group h-full flex flex-col">
         <div className="relative h-48 bg-muted overflow-hidden">
             <img 
-              src={propertyImage} 
+              src={imgError ? fallbackImg : streetViewUrl} 
               alt={property.address}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={() => setImgError(true)}
             />
             
             {/* Overlay Gradient */}
