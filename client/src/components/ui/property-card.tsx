@@ -13,6 +13,7 @@ import fixflip1 from "@assets/stock_images/fixer_upper_house_re_05fbbfad.jpg";
 import fixflip2 from "@assets/stock_images/fixer_upper_house_re_0bd8e163.jpg";
 import fixflip3 from "@assets/stock_images/fixer_upper_house_re_1ed060ca.jpg";
 
+const allImages = [dscr1, dscr2, dscr3, fixflip1, fixflip2, fixflip3];
 const dscrImages = [dscr1, dscr2, dscr3];
 const fixFlipImages = [fixflip1, fixflip2, fixflip3];
 
@@ -21,14 +22,23 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const imagePool = property.investmentType === "DSCR" ? dscrImages : fixFlipImages;
-  const imageIndex = (property.id || 0) % imagePool.length;
+  const getImagePool = () => {
+    if (property.investmentType === "DSCR") return dscrImages;
+    if (property.investmentType === "Fix & Flip") return fixFlipImages;
+    return allImages;
+  };
+  const imagePool = getImagePool();
+  const idNum = typeof property.id === 'string' ? property.id.charCodeAt(0) : (property.id || 0);
+  const imageIndex = idNum % imagePool.length;
   const propertyImage = imagePool[imageIndex];
   
-  const displayPrice = property.purchasePrice || property.investeeEstimatedValue || 0;
-  const displayRent = property.estRent || property.estimatedMonthlyRent || property.monthlyRent;
+  const displayPrice = property.purchasePrice || property.attomAvmValue || property.rentcastValueEstimate || property.estValue || 0;
+  const displayRent = property.estRent || property.rentcastRentEstimate || property.estimatedMonthlyRent;
   const displayARV = property.estARV || property.afterRepairValue;
-  const displayTaxes = property.taxes || property.annualTaxes;
+  const displayTaxes = property.taxes || property.annualTaxes || property.attomTaxAmount;
+  const displayBeds = property.bedrooms || property.beds || property.attomBeds;
+  const displayBaths = property.bathrooms || property.baths || property.attomBaths;
+  const displaySqFt = property.squareFeet || property.sqFt || property.attomBldgSize;
 
   return (
     <motion.div
@@ -47,8 +57,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
             
             <div className="absolute top-4 left-4 flex gap-2">
-              <Badge variant={property.investmentType === "DSCR" ? "default" : "secondary"} className="font-medium backdrop-blur-md bg-background/80 text-foreground border-none">
-                {property.investmentType}
+              <Badge variant="default" className="font-medium backdrop-blur-md bg-background/80 text-foreground border-none">
+                {property.investmentType || property.propertyType || property.attomPropClass || "Property"}
               </Badge>
               {property.rehabType && (
                 <Badge variant="outline" className="bg-black/40 text-white border-white/20 backdrop-blur-sm">
@@ -92,11 +102,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
               <span className="font-medium">{displayTaxes ? `$${displayTaxes.toLocaleString()}` : "N/A"}</span>
             </div>
           </div>
-          {(property.bedrooms || property.bathrooms || property.squareFeet) && (
+          {(displayBeds || displayBaths || displaySqFt) && (
             <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
-              {property.bedrooms && <span className="flex items-center gap-1"><Bed className="w-3 h-3" /> {property.bedrooms} beds</span>}
-              {property.bathrooms && <span className="flex items-center gap-1"><Bath className="w-3 h-3" /> {property.bathrooms} baths</span>}
-              {property.squareFeet && <span className="flex items-center gap-1"><Ruler className="w-3 h-3" /> {property.squareFeet.toLocaleString()} sqft</span>}
+              {displayBeds && <span className="flex items-center gap-1"><Bed className="w-3 h-3" /> {displayBeds} beds</span>}
+              {displayBaths && <span className="flex items-center gap-1"><Bath className="w-3 h-3" /> {displayBaths} baths</span>}
+              {displaySqFt && <span className="flex items-center gap-1"><Ruler className="w-3 h-3" /> {displaySqFt.toLocaleString()} sqft</span>}
             </div>
           )}
         </CardContent>
