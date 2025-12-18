@@ -1,16 +1,20 @@
 import { 
-  loanApplications, properties, propertyListings, propertyWatchlist, propertyOffers, propertyAlerts,
+  loanApplications, properties, propertyListings, propertyWatchlist, propertyOffers, propertyAlerts, users,
   type LoanApplication, type InsertLoanApplication, 
   type Property, type InsertProperty,
   type PropertyListing, type InsertListing,
   type PropertyWatchlistItem, type InsertWatchlist,
   type PropertyOffer, type InsertOffer,
-  type PropertyAlert, type InsertAlert
+  type PropertyAlert, type InsertAlert,
+  type User, type UpsertUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
   createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication>;
   getLoanApplication(id: string): Promise<LoanApplication | undefined>;
   getAllLoanApplications(): Promise<LoanApplication[]>;
@@ -52,6 +56,26 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
   async createLoanApplication(application: InsertLoanApplication): Promise<LoanApplication> {
     const [created] = await db
       .insert(loanApplications)

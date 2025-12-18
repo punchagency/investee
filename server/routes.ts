@@ -6,6 +6,7 @@ import { z } from "zod";
 import XLSX from "xlsx";
 import * as fs from "fs";
 import * as path from "path";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 const ATTOM_API_BASE = "https://api.gateway.attomdata.com/propertyapi/v1.0.0";
 
@@ -264,6 +265,34 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Setup Replit Auth
+  await setupAuth(app);
+
+  // Auth user endpoint
+  app.get('/api/auth/user', (req: any, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const userId = req.user.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    storage.getUser(userId)
+      .then(user => {
+        if (user) {
+          res.json(user);
+        } else {
+          res.status(404).json({ message: "User not found" });
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Failed to fetch user" });
+      });
+  });
+
   // Get Google Maps API key (restricted by HTTP referrer in Google Cloud Console)
   app.get("/api/config/maps", (req, res) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
