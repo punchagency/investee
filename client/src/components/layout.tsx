@@ -1,14 +1,18 @@
 import { Link, useLocation } from "wouter";
-import { Building2, PieChart, Search, Menu, X, MapPin, Bell } from "lucide-react";
+import { Building2, PieChart, Search, Menu, X, MapPin, Bell, LogIn, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ChatBot } from "@/components/chatbot";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   const navItems = [
     { href: "/", label: "Home", icon: Building2 },
@@ -45,11 +49,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
               </Link>
             ))}
-            <Link href="/dashboard">
-              <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
-                Dashboard
+            {isAuthenticated && (
+              <Link href="/dashboard">
+                <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
+                  Dashboard
+                </Button>
+              </Link>
+            )}
+            
+            {isLoading ? (
+              <div className="h-8 w-8 animate-pulse bg-muted rounded-full" />
+            ) : isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="user-menu-trigger">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
+                      <AvatarFallback>
+                        {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="font-medium" data-testid="user-display-name">
+                    {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild data-testid="button-logout">
+                    <a href="/api/logout" className="flex items-center gap-2 cursor-pointer">
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" asChild data-testid="button-login">
+                <a href="/api/login" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Log in
+                </a>
               </Button>
-            </Link>
+            )}
           </nav>
 
           {/* Mobile Nav */}
@@ -78,9 +119,47 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         {item.label}
                     </Link>
                   ))}
-                   <Link href="/dashboard">
-                     <Button className="mt-4 w-full bg-primary hover:bg-primary/90 text-white font-semibold" onClick={() => setIsOpen(false)}>Dashboard</Button>
-                   </Link>
+                   {isAuthenticated && (
+                     <Link href="/dashboard">
+                       <Button className="mt-4 w-full bg-primary hover:bg-primary/90 text-white font-semibold" onClick={() => setIsOpen(false)}>Dashboard</Button>
+                     </Link>
+                   )}
+                   
+                   <div className="mt-6 pt-4 border-t">
+                     {isAuthenticated && user ? (
+                       <div className="space-y-3">
+                         <div className="flex items-center gap-3 px-2">
+                           <Avatar className="h-10 w-10">
+                             <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || "User"} style={{ objectFit: 'cover' }} />
+                             <AvatarFallback>
+                               {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div>
+                             <p className="font-medium text-sm">
+                               {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email}
+                             </p>
+                             {user.email && user.firstName && (
+                               <p className="text-xs text-muted-foreground">{user.email}</p>
+                             )}
+                           </div>
+                         </div>
+                         <Button variant="outline" className="w-full" asChild onClick={() => setIsOpen(false)}>
+                           <a href="/api/logout" className="flex items-center justify-center gap-2">
+                             <LogOut className="h-4 w-4" />
+                             Log out
+                           </a>
+                         </Button>
+                       </div>
+                     ) : (
+                       <Button className="w-full" asChild onClick={() => setIsOpen(false)}>
+                         <a href="/api/login" className="flex items-center justify-center gap-2">
+                           <LogIn className="h-4 w-4" />
+                           Log in
+                         </a>
+                       </Button>
+                     )}
+                   </div>
                 </nav>
               </SheetContent>
             </Sheet>
