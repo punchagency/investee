@@ -179,8 +179,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Built with <span className="font-semibold">Investee</span>. The marketplace for commercial real estate financing.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-             <Link href="/terms"><a className="hover:underline">Terms</a></Link>
-             <Link href="/privacy"><a className="hover:underline">Privacy</a></Link>
+             <Link href="/terms" className="hover:underline">Terms</Link>
+             <Link href="/privacy" className="hover:underline">Privacy</Link>
           </div>
         </div>
       </footer>
