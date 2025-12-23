@@ -6,7 +6,7 @@ import { MapPin, ArrowRight, TrendingUp, Home, Hammer, Bed, Bath, Ruler } from "
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 
-import fallbackImg from "@assets/stock_images/rental_property_apar_495de18b.jpg";
+import fallbackImg from "@/assets/stock_images/rental_property_apar_495de18b.jpg";
 
 interface PropertyCardProps {
   property: any;

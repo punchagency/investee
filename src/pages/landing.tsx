@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, ShieldCheck, Zap, Globe, Clock } from "lucide-react";
 import { motion } from "framer-motion";
-import heroImage from "@assets/generated_images/luxury_modern_kitchen_with_natural_lighting.png";
+import heroImage from "@/assets/generated_images/luxury_modern_kitchen_with_natural_lighting.png";
 
 export default function Landing() {
   return (
