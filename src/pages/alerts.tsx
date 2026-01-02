@@ -1,16 +1,51 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Plus, Pencil, Trash2, DollarSign, Home, MapPin, Bed, Bath, Ruler } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import {
+  Bell,
+  Plus,
+  Pencil,
+  Trash2,
+  DollarSign,
+  Home,
+  MapPin,
+  Bed,
+  Bath,
+  Ruler,
+} from "lucide-react";
+import {
+  getAllAlerts,
+  createAlert,
+  updateAlert,
+  deleteAlert,
+} from "@/services/AlertServices";
 
 interface PropertyAlert {
   id: string;
@@ -59,15 +94,60 @@ const PROPERTY_TYPES = [
   "Townhouse",
   "Commercial",
   "Land",
-  "Other"
+  "Other",
 ];
 
 const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
 ];
 
 const defaultFormData: AlertFormData = {
@@ -85,7 +165,7 @@ const defaultFormData: AlertFormData = {
   cities: "",
   states: "",
   postalCodes: "",
-  keywords: ""
+  keywords: "",
 };
 
 export default function AlertsPage() {
@@ -96,7 +176,11 @@ export default function AlertsPage() {
   const [formData, setFormData] = useState<AlertFormData>(defaultFormData);
 
   const { data: alerts = [], isLoading } = useQuery<PropertyAlert[]>({
-    queryKey: ["/api/alerts"],
+    queryKey: ["alerts"],
+    queryFn: async () => {
+      const response = await getAllAlerts();
+      return response.data;
+    },
   });
 
   const createMutation = useMutation({
@@ -112,76 +196,126 @@ export default function AlertsPage() {
         maxBaths: data.maxBaths ? parseFloat(data.maxBaths) : null,
         minSqFt: data.minSqFt ? parseInt(data.minSqFt) : null,
         maxSqFt: data.maxSqFt ? parseInt(data.maxSqFt) : null,
-        propertyTypes: data.propertyTypes.length > 0 ? data.propertyTypes : null,
-        cities: data.cities ? data.cities.split(",").map(c => c.trim()).filter(Boolean) : null,
-        states: data.states ? data.states.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : null,
-        postalCodes: data.postalCodes ? data.postalCodes.split(",").map(p => p.trim()).filter(Boolean) : null,
+        propertyTypes:
+          data.propertyTypes.length > 0 ? data.propertyTypes : null,
+        cities: data.cities
+          ? data.cities
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : null,
+        states: data.states
+          ? data.states
+              .split(",")
+              .map((s) => s.trim().toUpperCase())
+              .filter(Boolean)
+          : null,
+        postalCodes: data.postalCodes
+          ? data.postalCodes
+              .split(",")
+              .map((p) => p.trim())
+              .filter(Boolean)
+          : null,
         keywords: data.keywords || null,
       };
-      return apiRequest("POST", "/api/alerts", payload);
+      return createAlert(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
       toast({ title: "Alert created successfully" });
       setIsCreateOpen(false);
       setFormData(defaultFormData);
     },
     onError: () => {
       toast({ title: "Failed to create alert", variant: "destructive" });
-    }
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<AlertFormData> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AlertFormData>;
+    }) => {
       const payload: any = {};
       if (data.name !== undefined) payload.name = data.name;
       if (data.isActive !== undefined) payload.isActive = data.isActive;
-      if (data.minPrice !== undefined) payload.minPrice = data.minPrice ? parseInt(data.minPrice) : null;
-      if (data.maxPrice !== undefined) payload.maxPrice = data.maxPrice ? parseInt(data.maxPrice) : null;
-      if (data.minBeds !== undefined) payload.minBeds = data.minBeds ? parseInt(data.minBeds) : null;
-      if (data.maxBeds !== undefined) payload.maxBeds = data.maxBeds ? parseInt(data.maxBeds) : null;
-      if (data.minBaths !== undefined) payload.minBaths = data.minBaths ? parseFloat(data.minBaths) : null;
-      if (data.maxBaths !== undefined) payload.maxBaths = data.maxBaths ? parseFloat(data.maxBaths) : null;
-      if (data.minSqFt !== undefined) payload.minSqFt = data.minSqFt ? parseInt(data.minSqFt) : null;
-      if (data.maxSqFt !== undefined) payload.maxSqFt = data.maxSqFt ? parseInt(data.maxSqFt) : null;
-      if (data.propertyTypes !== undefined) payload.propertyTypes = data.propertyTypes.length > 0 ? data.propertyTypes : null;
-      if (data.cities !== undefined) payload.cities = data.cities ? data.cities.split(",").map(c => c.trim()).filter(Boolean) : null;
-      if (data.states !== undefined) payload.states = data.states ? data.states.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) : null;
-      if (data.postalCodes !== undefined) payload.postalCodes = data.postalCodes ? data.postalCodes.split(",").map(p => p.trim()).filter(Boolean) : null;
+      if (data.minPrice !== undefined)
+        payload.minPrice = data.minPrice ? parseInt(data.minPrice) : null;
+      if (data.maxPrice !== undefined)
+        payload.maxPrice = data.maxPrice ? parseInt(data.maxPrice) : null;
+      if (data.minBeds !== undefined)
+        payload.minBeds = data.minBeds ? parseInt(data.minBeds) : null;
+      if (data.maxBeds !== undefined)
+        payload.maxBeds = data.maxBeds ? parseInt(data.maxBeds) : null;
+      if (data.minBaths !== undefined)
+        payload.minBaths = data.minBaths ? parseFloat(data.minBaths) : null;
+      if (data.maxBaths !== undefined)
+        payload.maxBaths = data.maxBaths ? parseFloat(data.maxBaths) : null;
+      if (data.minSqFt !== undefined)
+        payload.minSqFt = data.minSqFt ? parseInt(data.minSqFt) : null;
+      if (data.maxSqFt !== undefined)
+        payload.maxSqFt = data.maxSqFt ? parseInt(data.maxSqFt) : null;
+      if (data.propertyTypes !== undefined)
+        payload.propertyTypes =
+          data.propertyTypes.length > 0 ? data.propertyTypes : null;
+      if (data.cities !== undefined)
+        payload.cities = data.cities
+          ? data.cities
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : null;
+      if (data.states !== undefined)
+        payload.states = data.states
+          ? data.states
+              .split(",")
+              .map((s) => s.trim().toUpperCase())
+              .filter(Boolean)
+          : null;
+      if (data.postalCodes !== undefined)
+        payload.postalCodes = data.postalCodes
+          ? data.postalCodes
+              .split(",")
+              .map((p) => p.trim())
+              .filter(Boolean)
+          : null;
       if (data.keywords !== undefined) payload.keywords = data.keywords || null;
-      return apiRequest("PATCH", `/api/alerts/${id}`, payload);
+      return updateAlert(id, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
       toast({ title: "Alert updated successfully" });
       setEditingAlert(null);
       setFormData(defaultFormData);
     },
     onError: () => {
       toast({ title: "Failed to update alert", variant: "destructive" });
-    }
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/alerts/${id}`);
+      return deleteAlert(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
       toast({ title: "Alert deleted successfully" });
     },
     onError: () => {
       toast({ title: "Failed to delete alert", variant: "destructive" });
-    }
+    },
   });
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      return apiRequest("PATCH", `/api/alerts/${id}`, { isActive: isActive ? "true" : "false" });
+      return updateAlert(id, { isActive: isActive ? "true" : "false" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+    },
   });
 
   const openEditDialog = (alert: PropertyAlert) => {
@@ -201,7 +335,7 @@ export default function AlertsPage() {
       cities: alert.cities?.join(", ") || "",
       states: alert.states?.join(", ") || "",
       postalCodes: alert.postalCodes?.join(", ") || "",
-      keywords: alert.keywords || ""
+      keywords: alert.keywords || "",
     });
   };
 
@@ -218,19 +352,23 @@ export default function AlertsPage() {
   };
 
   const togglePropertyType = (type: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       propertyTypes: prev.propertyTypes.includes(type)
-        ? prev.propertyTypes.filter(t => t !== type)
-        : [...prev.propertyTypes, type]
+        ? prev.propertyTypes.filter((t) => t !== type)
+        : [...prev.propertyTypes, type],
     }));
   };
 
   const formatCriteria = (alert: PropertyAlert): string[] => {
     const criteria: string[] = [];
     if (alert.minPrice || alert.maxPrice) {
-      const min = alert.minPrice ? `$${alert.minPrice.toLocaleString()}` : "Any";
-      const max = alert.maxPrice ? `$${alert.maxPrice.toLocaleString()}` : "Any";
+      const min = alert.minPrice
+        ? `$${alert.minPrice.toLocaleString()}`
+        : "Any";
+      const max = alert.maxPrice
+        ? `$${alert.maxPrice.toLocaleString()}`
+        : "Any";
       criteria.push(`Price: ${min} - ${max}`);
     }
     if (alert.minBeds || alert.maxBeds) {
@@ -275,9 +413,18 @@ export default function AlertsPage() {
             Get notified when properties matching your criteria are listed
           </p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) setFormData(defaultFormData); }}>
+        <Dialog
+          open={isCreateOpen}
+          onOpenChange={(open) => {
+            setIsCreateOpen(open);
+            if (!open) setFormData(defaultFormData);
+          }}
+        >
           <DialogTrigger asChild>
-            <Button data-testid="button-create-alert" className="bg-[#1C49A6] hover:bg-[#153a85]">
+            <Button
+              data-testid="button-create-alert"
+              className="bg-[#1C49A6] hover:bg-[#153a85]"
+            >
               <Plus className="w-4 h-4 mr-2" /> Create Alert
             </Button>
           </DialogTrigger>
@@ -285,15 +432,17 @@ export default function AlertsPage() {
             <DialogHeader>
               <DialogTitle>Create New Alert</DialogTitle>
             </DialogHeader>
-            <AlertForm 
-              formData={formData} 
-              setFormData={setFormData} 
+            <AlertForm
+              formData={formData}
+              setFormData={setFormData}
               togglePropertyType={togglePropertyType}
             />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-              <Button 
-                onClick={handleSubmit} 
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
                 disabled={createMutation.isPending}
                 data-testid="button-save-alert"
                 className="bg-[#1C49A6] hover:bg-[#153a85]"
@@ -306,7 +455,9 @@ export default function AlertsPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading alerts...</div>
+        <div className="text-center py-12 text-muted-foreground">
+          Loading alerts...
+        </div>
       ) : alerts.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -315,7 +466,10 @@ export default function AlertsPage() {
             <p className="text-muted-foreground mb-4">
               Create your first alert to get notified about new properties
             </p>
-            <Button onClick={() => setIsCreateOpen(true)} className="bg-[#1C49A6] hover:bg-[#153a85]">
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-[#1C49A6] hover:bg-[#153a85]"
+            >
               <Plus className="w-4 h-4 mr-2" /> Create Your First Alert
             </Button>
           </CardContent>
@@ -329,7 +483,12 @@ export default function AlertsPage() {
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={alert.isActive === "true"}
-                      onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: alert.id, isActive: checked })}
+                      onCheckedChange={(checked) =>
+                        toggleActiveMutation.mutate({
+                          id: alert.id,
+                          isActive: checked,
+                        })
+                      }
                       data-testid={`switch-alert-active-${alert.id}`}
                     />
                     <div>
@@ -340,7 +499,11 @@ export default function AlertsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={alert.isActive === "true" ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        alert.isActive === "true" ? "default" : "secondary"
+                      }
+                    >
                       {alert.isActive === "true" ? "Active" : "Paused"}
                     </Badge>
                     <Button
@@ -370,7 +533,9 @@ export default function AlertsPage() {
                     </Badge>
                   ))}
                   {formatCriteria(alert).length === 0 && (
-                    <span className="text-sm text-muted-foreground">No specific criteria set - matches all properties</span>
+                    <span className="text-sm text-muted-foreground">
+                      No specific criteria set - matches all properties
+                    </span>
                   )}
                 </div>
               </CardContent>
@@ -379,20 +544,30 @@ export default function AlertsPage() {
         </div>
       )}
 
-      <Dialog open={!!editingAlert} onOpenChange={(open) => { if (!open) { setEditingAlert(null); setFormData(defaultFormData); } }}>
+      <Dialog
+        open={!!editingAlert}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingAlert(null);
+            setFormData(defaultFormData);
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Alert</DialogTitle>
           </DialogHeader>
-          <AlertForm 
-            formData={formData} 
-            setFormData={setFormData} 
+          <AlertForm
+            formData={formData}
+            setFormData={setFormData}
             togglePropertyType={togglePropertyType}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingAlert(null)}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button variant="outline" onClick={() => setEditingAlert(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
               disabled={updateMutation.isPending}
               data-testid="button-update-alert"
               className="bg-[#1C49A6] hover:bg-[#153a85]"
@@ -406,13 +581,13 @@ export default function AlertsPage() {
   );
 }
 
-function AlertForm({ 
-  formData, 
-  setFormData, 
-  togglePropertyType 
-}: { 
-  formData: AlertFormData; 
-  setFormData: React.Dispatch<React.SetStateAction<AlertFormData>>; 
+function AlertForm({
+  formData,
+  setFormData,
+  togglePropertyType,
+}: {
+  formData: AlertFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AlertFormData>>;
   togglePropertyType: (type: string) => void;
 }) {
   return (
@@ -422,7 +597,9 @@ function AlertForm({
         <Input
           id="alert-name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
+          }
           placeholder="e.g., Miami Investment Properties"
           data-testid="input-alert-name"
         />
@@ -439,7 +616,9 @@ function AlertForm({
               id="min-price"
               type="number"
               value={formData.minPrice}
-              onChange={(e) => setFormData(prev => ({ ...prev, minPrice: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, minPrice: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-min-price"
             />
@@ -450,7 +629,9 @@ function AlertForm({
               id="max-price"
               type="number"
               value={formData.maxPrice}
-              onChange={(e) => setFormData(prev => ({ ...prev, maxPrice: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, maxPrice: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-max-price"
             />
@@ -469,7 +650,9 @@ function AlertForm({
               id="min-beds"
               type="number"
               value={formData.minBeds}
-              onChange={(e) => setFormData(prev => ({ ...prev, minBeds: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, minBeds: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-min-beds"
             />
@@ -480,7 +663,9 @@ function AlertForm({
               id="max-beds"
               type="number"
               value={formData.maxBeds}
-              onChange={(e) => setFormData(prev => ({ ...prev, maxBeds: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, maxBeds: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-max-beds"
             />
@@ -492,7 +677,9 @@ function AlertForm({
               type="number"
               step="0.5"
               value={formData.minBaths}
-              onChange={(e) => setFormData(prev => ({ ...prev, minBaths: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, minBaths: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-min-baths"
             />
@@ -504,7 +691,9 @@ function AlertForm({
               type="number"
               step="0.5"
               value={formData.maxBaths}
-              onChange={(e) => setFormData(prev => ({ ...prev, maxBaths: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, maxBaths: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-max-baths"
             />
@@ -517,7 +706,9 @@ function AlertForm({
               id="min-sqft"
               type="number"
               value={formData.minSqFt}
-              onChange={(e) => setFormData(prev => ({ ...prev, minSqFt: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, minSqFt: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-min-sqft"
             />
@@ -528,7 +719,9 @@ function AlertForm({
               id="max-sqft"
               type="number"
               value={formData.maxSqFt}
-              onChange={(e) => setFormData(prev => ({ ...prev, maxSqFt: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, maxSqFt: e.target.value }))
+              }
               placeholder="Any"
               data-testid="input-max-sqft"
             />
@@ -542,10 +735,14 @@ function AlertForm({
           {PROPERTY_TYPES.map((type) => (
             <Badge
               key={type}
-              variant={formData.propertyTypes.includes(type) ? "default" : "outline"}
+              variant={
+                formData.propertyTypes.includes(type) ? "default" : "outline"
+              }
               className="cursor-pointer"
               onClick={() => togglePropertyType(type)}
-              data-testid={`badge-property-type-${type.toLowerCase().replace(" ", "-")}`}
+              data-testid={`badge-property-type-${type
+                .toLowerCase()
+                .replace(" ", "-")}`}
             >
               {type}
             </Badge>
@@ -563,17 +760,23 @@ function AlertForm({
             <Input
               id="cities"
               value={formData.cities}
-              onChange={(e) => setFormData(prev => ({ ...prev, cities: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, cities: e.target.value }))
+              }
               placeholder="e.g., Miami, Orlando, Tampa"
               data-testid="input-cities"
             />
           </div>
           <div>
-            <Label htmlFor="states">States (comma-separated, e.g., FL, CA)</Label>
+            <Label htmlFor="states">
+              States (comma-separated, e.g., FL, CA)
+            </Label>
             <Input
               id="states"
               value={formData.states}
-              onChange={(e) => setFormData(prev => ({ ...prev, states: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, states: e.target.value }))
+              }
               placeholder="e.g., FL, TX, CA"
               data-testid="input-states"
             />
@@ -583,7 +786,12 @@ function AlertForm({
             <Input
               id="postal-codes"
               value={formData.postalCodes}
-              onChange={(e) => setFormData(prev => ({ ...prev, postalCodes: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  postalCodes: e.target.value,
+                }))
+              }
               placeholder="e.g., 33101, 33102"
               data-testid="input-postal-codes"
             />
@@ -596,7 +804,9 @@ function AlertForm({
         <Input
           id="keywords"
           value={formData.keywords}
-          onChange={(e) => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, keywords: e.target.value }))
+          }
           placeholder="e.g., pool, waterfront, new construction"
           data-testid="input-keywords"
         />

@@ -1,5 +1,11 @@
 import https from "./http";
 
+export const getStreetViewImageUrl = (address: string, size?: string) => {
+  let url = `/api/streetview?address=${encodeURIComponent(address)}`;
+  if (size) url += `&size=${size}`;
+  return url;
+};
+
 // Search property by address (ATTOM)
 export const searchProperty = (address: string) => {
   return https.get(`/property/search?address=${encodeURIComponent(address)}`);
@@ -45,6 +51,21 @@ export const updateProperty = (id: string, data: any) => {
   return https.put(`/properties/${id}`, data);
 };
 
+// Enrich property (ATTOM)
+export const enrichProperty = (id: string) => {
+  return https.post(`/properties/${id}/enrich`);
+};
+
+// Enrich property (RentCast)
+export const enrichPropertyRentcast = (id: string) => {
+  return https.post(`/properties/${id}/enrich-rentcast`);
+};
+
+// Get Maps Config
+export const getMapsConfig = () => {
+  return https.get("/config/maps");
+};
+
 // Import properties from Excel
 export const importProperties = (filePath: string) => {
   return https.post("/properties/import", { filePath });
@@ -53,16 +74,6 @@ export const importProperties = (filePath: string) => {
 // Batch enrich properties with ATTOM data
 export const enrichProperties = (force: boolean = false) => {
   return https.post("/properties/enrich", { force });
-};
-
-// Enrich single property with ATTOM data
-export const enrichProperty = (id: string) => {
-  return https.post(`/properties/${id}/enrich`);
-};
-
-// Enrich single property with Rentcast data
-export const enrichPropertyRentcast = (id: string) => {
-  return https.post(`/properties/${id}/enrich-rentcast`);
 };
 
 // Batch enrich properties with Rentcast data

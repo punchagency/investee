@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cindy AI Widget</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: "hsl(142, 71%, 45%)",
+                foreground: "hsl(0, 0%, 100%)",
+              },
+              secondary: {
+                DEFAULT: "hsl(209, 71%, 48%)",
+                foreground: "hsl(0, 0%, 100%)",
+              },
+            },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            animation: {
+              "bounce-slow": "bounce 1.5s infinite",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* Smooth scrolling for the chat area */
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Message entry animation */
+      @keyframes message-pop {
+        0% {
+          opacity: 0;
+          transform: translateY(10px) scale(0.95);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .message-anim {
+        animation: message-pop 0.3s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-200 h-screen w-screen flex items-center justify-center relative font-sans"
+  >
+    <div class="text-center space-y-4">
+      <h1 class="text-4xl font-bold text-gray-800">Your Competition Project</h1>
+      <p class="text-gray-500">
+        The widget lives in the bottom right corner ↘️
+      </p>
+    </div>
+
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+      <div
+        id="chat-window"
+        class="transition-all duration-300 ease-in-out transform origin-bottom-right scale-95 opacity-0 translate-y-4 pointer-events-none w-[380px] h-[600px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col hidden"
+      >
+        <div class="bg-primary p-4 flex items-center justify-between shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <div
+                class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 overflow-hidden"
+              >
+                <img
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cindy&backgroundColor=b6e3f4"
+                  alt="Cindy"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <span
+                class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-green-700 rounded-full"
+              ></span>
+            </div>
+            <div>
+              <h3 class="text-white font-bold text-lg leading-tight">Cindy</h3>
+              <p class="text-green-100 text-xs flex items-center gap-1">
+                <span class="animate-pulse">●</span> Online
+              </p>
+            </div>
+          </div>
+          <button
+            onclick="toggleChat()"
+            class="text-white/80 hover:text-white hover:bg-white/10 p-1 rounded-full transition-colors"
+          >
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div
+          id="messages-container"
+          class="flex-1 overflow-y-auto p-4 bg-gray-50/50 space-y-4 scrollbar-hide"
+        >
+          <div class="flex justify-start message-anim">
+            <div
+              class="max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm bg-white text-gray-800 border border-gray-100 rounded-tl-none"
+            >
+              Hi there! I'm Cindy. 👋 Good luck with the competition! How can I
+              assist you today?
+            </div>
+          </div>
+        </div>
+
+        <div id="typing-indicator" class="px-4 pb-2 hidden">
+          <div class="flex justify-start">
+            <div
+              class="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 items-center w-fit"
+            >
+              <span
+                class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+              ></span>
+              <span
+                class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                style="animation-delay: 150ms"
+              ></span>
+              <span
+                class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                style="animation-delay: 300ms"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-white border-t border-gray-100">
+          <form onsubmit="handleSend(event)" class="flex items-end gap-2">
+            <div
+              class="flex-1 bg-gray-100 rounded-2xl flex items-center px-4 py-2 border border-transparent focus-within:border-primary/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/10 transition-all"
+            >
+              <input
+                id="user-input"
+                type="text"
+                placeholder="Ask Cindy..."
+                class="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder:text-gray-400"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="text-gray-400 hover:text-secondary transition-colors ml-2"
+              >
+                <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <button
+              type="submit"
+              id="send-btn"
+              class="p-3 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center bg-gray-200 text-gray-400 cursor-not-allowed"
+              disabled
+            >
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </button>
+          </form>
+          <div class="text-center mt-2">
+            <p class="text-[10px] text-gray-400">Powered by AI Widget</p>
+          </div>
+        </div>
+      </div>
+
+      <button
+        id="launcher-btn"
+        onclick="toggleChat()"
+        class="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 bg-primary hover:rotate-12 z-50"
+      >
+        <i data-lucide="message-square" class="w-7 h-7 fill-current"></i>
+      </button>
+    </div>
+
+    <script>
+      // Initialize Icons
+      lucide.createIcons();
+
+      // State
+      let isOpen = false;
+      const chatWindow = document.getElementById("chat-window");
+      const launcherBtn = document.getElementById("launcher-btn");
+      const messagesContainer = document.getElementById("messages-container");
+      const userInput = document.getElementById("user-input");
+      const sendBtn = document.getElementById("send-btn");
+      const typingIndicator = document.getElementById("typing-indicator");
+
+      // Toggle Chat
+      function toggleChat() {
+        isOpen = !isOpen;
+        if (isOpen) {
+          chatWindow.classList.remove(
+            "hidden",
+            "scale-95",
+            "opacity-0",
+            "translate-y-4",
+            "pointer-events-none"
+          );
+          chatWindow.classList.add("scale-100", "opacity-100", "translate-y-0");
+
+          // Change Icon to X
+          launcherBtn.classList.remove("bg-primary", "hover:rotate-12");
+          launcherBtn.classList.add("bg-gray-800", "rotate-90");
+          launcherBtn.innerHTML = '<i data-lucide="x" class="w-7 h-7"></i>';
+        } else {
+          chatWindow.classList.add(
+            "scale-95",
+            "opacity-0",
+            "translate-y-4",
+            "pointer-events-none"
+          );
+          chatWindow.classList.remove(
+            "scale-100",
+            "opacity-100",
+            "translate-y-0"
+          );
+
+          // Change Icon to Message
+          launcherBtn.classList.add("bg-primary", "hover:rotate-12");
+          launcherBtn.classList.remove("bg-gray-800", "rotate-90");
+          launcherBtn.innerHTML =
+            '<i data-lucide="message-square" class="w-7 h-7 fill-current"></i>';
+
+          // Wait for animation to finish before hiding display (optional, but cleaner keeps it in DOM)
+          // We leave 'hidden' off to allow transitions, relying on opacity/pointer-events
+        }
+        lucide.createIcons();
+      }
+
+      // Enable/Disable Send Button
+      userInput.addEventListener("input", (e) => {
+        if (e.target.value.trim()) {
+          sendBtn.classList.remove(
+            "bg-gray-200",
+            "text-gray-400",
+            "cursor-not-allowed"
+          );
+          sendBtn.classList.add(
+            "bg-secondary",
+            "text-white",
+            "hover:scale-105"
+          );
+          sendBtn.disabled = false;
+        } else {
+          sendBtn.classList.add(
+            "bg-gray-200",
+            "text-gray-400",
+            "cursor-not-allowed"
+          );
+          sendBtn.classList.remove(
+            "bg-secondary",
+            "text-white",
+            "hover:scale-105"
+          );
+          sendBtn.disabled = true;
+        }
+      });
+
+      // Handle Send
+      function handleSend(e) {
+        e.preventDefault();
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. Add User Message
+        appendMessage(text, "user");
+        userInput.value = "";
+
+        // Reset button
+        sendBtn.classList.add(
+          "bg-gray-200",
+          "text-gray-400",
+          "cursor-not-allowed"
+        );
+        sendBtn.classList.remove(
+          "bg-secondary",
+          "text-white",
+          "hover:scale-105"
+        );
+        sendBtn.disabled = true;
+
+        // 2. Show Typing Indicator
+        typingIndicator.classList.remove("hidden");
+        scrollToBottom();
+
+        // 3. Simulate Bot Response
+        setTimeout(() => {
+          typingIndicator.classList.add("hidden");
+          appendMessage(
+            "That's a great point! I'm designed to help you win. Let me process that request...",
+            "bot"
+          );
+        }, 1500);
+      }
+
+      function appendMessage(text, sender) {
+        const div = document.createElement("div");
+        div.className = `flex ${
+          sender === "user" ? "justify-end" : "justify-start"
+        } message-anim`;
+
+        const bubble = document.createElement("div");
+        bubble.className = `max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+          sender === "user"
+            ? "bg-primary text-white rounded-tr-none"
+            : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"
+        }`;
+        bubble.textContent = text;
+
+        div.appendChild(bubble);
+        messagesContainer.appendChild(div);
+        scrollToBottom();
+      }
+
+      function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

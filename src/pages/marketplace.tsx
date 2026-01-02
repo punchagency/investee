@@ -2,42 +2,47 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, Heart, MapPin, DollarSign, ArrowLeft, Building2 } from "lucide-react";
+import {
+  Home,
+  Heart,
+  MapPin,
+  DollarSign,
+  ArrowLeft,
+  Building2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-interface Property {
-  id: string;
-  address: string;
-  city: string | null;
-  state: string | null;
-  sqFt: number | null;
-  beds: number | null;
-  baths: number | null;
-  attomMarketValue: number | null;
-  attomBldgSize: number | null;
-  attomBeds: number | null;
-  attomBaths: number | null;
-  attomYearBuilt: number | null;
-  propertyType: string | null;
-}
+import {
+  getListings,
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+  submitOffer as submitOfferService,
+  Listing,
+} from "@/services/MarketplaceServices";
 
-interface Listing {
-  id: string;
-  propertyId: string;
-  status: string;
-  listPrice: number | null;
-  description: string | null;
-  property?: Property | null;
-}
+// Remove local interfaces that are now in the service or not needed if using service types
+// For now, I'll keep the Property interface if it's not exported from service, but Listing is exported.
+// Actually, let's just use the types from the service if they match, or keep local if needed for partial updates.
+// The service exports Listing and Property (implicitly via Listing).
+// Let's use the local interfaces or update them to import from service.
+// For this refactor, I will just replace the fetch calls and let the types match structurally or I'll import them.
 
 export default function MarketplacePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [watchedListings, setWatchedListings] = useState<Set<string>>(new Set());
+  const [watchedListings, setWatchedListings] = useState<Set<string>>(
+    new Set()
+  );
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [offerAmount, setOfferAmount] = useState("");
@@ -50,11 +55,8 @@ export default function MarketplacePage() {
 
   async function fetchListings() {
     try {
-      const response = await fetch("/api/listings");
-      if (response.ok) {
-        const data = await response.json();
-        setListings(data);
-      }
+      const response = await getListings();
+      setListings(response.data);
     } catch (error) {
       console.error("Error fetching listings:", error);
     } finally {
@@ -64,12 +66,11 @@ export default function MarketplacePage() {
 
   async function fetchWatchlist() {
     try {
-      const response = await fetch("/api/watchlist");
-      if (response.ok) {
-        const data = await response.json();
-        const watchedIds = new Set(data.map((item: any) => item.listingId));
-        setWatchedListings(watchedIds as Set<string>);
-      }
+      const response = await getWatchlist();
+      const watchedIds = new Set(
+        response.data.map((item: any) => item.listingId)
+      );
+      setWatchedListings(watchedIds as Set<string>);
     } catch (error) {
       console.error("Error fetching watchlist:", error);
     }
@@ -78,19 +79,17 @@ export default function MarketplacePage() {
   async function toggleWatchlist(listingId: string) {
     try {
       if (watchedListings.has(listingId)) {
-        await fetch(`/api/watchlist/${listingId}`, { method: "DELETE" });
-        setWatchedListings(prev => {
+        await removeFromWatchlist(listingId);
+        setWatchedListings((prev) => {
           const newSet = new Set(prev);
           newSet.delete(listingId);
           return newSet;
         });
       } else {
-        await fetch("/api/watchlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ listingId }),
-        });
-        setWatchedListings(prev => new Set(Array.from(prev).concat(listingId)));
+        await addToWatchlist(listingId);
+        setWatchedListings(
+          (prev) => new Set(Array.from(prev).concat(listingId))
+        );
       }
     } catch (error) {
       console.error("Error updating watchlist:", error);
@@ -100,22 +99,17 @@ export default function MarketplacePage() {
   async function submitOffer() {
     if (!selectedListing || !offerAmount) return;
     try {
-      const response = await fetch("/api/offers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId: selectedListing.id,
-          offerAmount: parseInt(offerAmount),
-          message: offerMessage,
-        }),
+      await submitOfferService({
+        listingId: selectedListing.id,
+        offerAmount: parseInt(offerAmount),
+        message: offerMessage,
       });
-      if (response.ok) {
-        setOfferDialogOpen(false);
-        setOfferAmount("");
-        setOfferMessage("");
-        setSelectedListing(null);
-        alert("Offer submitted successfully!");
-      }
+
+      setOfferDialogOpen(false);
+      setOfferAmount("");
+      setOfferMessage("");
+      setSelectedListing(null);
+      alert("Offer submitted successfully!");
     } catch (error) {
       console.error("Error submitting offer:", error);
     }
@@ -133,10 +127,15 @@ export default function MarketplacePage() {
       </div>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold text-foreground" data-testid="text-marketplace-title">
+        <h1
+          className="text-3xl font-heading font-bold text-foreground"
+          data-testid="text-marketplace-title"
+        >
           Property Marketplace
         </h1>
-        <p className="text-muted-foreground">Browse and invest in properties listed for sale</p>
+        <p className="text-muted-foreground">
+          Browse and invest in properties listed for sale
+        </p>
       </div>
 
       {loading ? (
@@ -147,14 +146,22 @@ export default function MarketplacePage() {
         <Card>
           <CardContent className="text-center py-12">
             <Building2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="text-lg font-medium text-muted-foreground">No listings available</p>
-            <p className="text-sm text-muted-foreground mb-4">Check back later for new property listings.</p>
+            <p className="text-lg font-medium text-muted-foreground">
+              No listings available
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Check back later for new property listings.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {listings.map((listing) => (
-            <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>
+            <Card
+              key={listing.id}
+              className="overflow-hidden hover:shadow-lg transition-shadow"
+              data-testid={`card-listing-${listing.id}`}
+            >
               <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="bg-white/80 p-2 rounded-lg">
@@ -164,10 +171,18 @@ export default function MarketplacePage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleWatchlist(listing.id)}
-                    className={watchedListings.has(listing.id) ? "text-red-500" : "text-gray-400"}
+                    className={
+                      watchedListings.has(listing.id)
+                        ? "text-red-500"
+                        : "text-gray-400"
+                    }
                     data-testid={`button-watchlist-${listing.id}`}
                   >
-                    <Heart className={`w-5 h-5 ${watchedListings.has(listing.id) ? "fill-current" : ""}`} />
+                    <Heart
+                      className={`w-5 h-5 ${
+                        watchedListings.has(listing.id) ? "fill-current" : ""
+                      }`}
+                    />
                   </Button>
                 </div>
                 <p className="text-2xl font-bold text-primary">
@@ -175,29 +190,45 @@ export default function MarketplacePage() {
                 </p>
               </div>
               <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-1">{listing.property?.address || "Property"}</h3>
+                <h3 className="font-semibold text-lg mb-1">
+                  {listing.property?.address || "Property"}
+                </h3>
                 <p className="text-sm text-muted-foreground flex items-center gap-1 mb-3">
                   <MapPin className="w-3 h-3" />
                   {listing.property?.city}, {listing.property?.state}
                 </p>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
                   <div className="text-center p-2 bg-muted/50 rounded">
-                    <p className="font-medium">{listing.property?.attomBeds || listing.property?.beds || "-"}</p>
+                    <p className="font-medium">
+                      {listing.property?.attomBeds ||
+                        listing.property?.beds ||
+                        "-"}
+                    </p>
                     <p className="text-xs text-muted-foreground">Beds</p>
                   </div>
                   <div className="text-center p-2 bg-muted/50 rounded">
-                    <p className="font-medium">{listing.property?.attomBaths || listing.property?.baths || "-"}</p>
+                    <p className="font-medium">
+                      {listing.property?.attomBaths ||
+                        listing.property?.baths ||
+                        "-"}
+                    </p>
                     <p className="text-xs text-muted-foreground">Baths</p>
                   </div>
                   <div className="text-center p-2 bg-muted/50 rounded">
-                    <p className="font-medium">{listing.property?.attomBldgSize?.toLocaleString() || listing.property?.sqFt?.toLocaleString() || "-"}</p>
+                    <p className="font-medium">
+                      {listing.property?.attomBldgSize?.toLocaleString() ||
+                        listing.property?.sqFt?.toLocaleString() ||
+                        "-"}
+                    </p>
                     <p className="text-xs text-muted-foreground">Sq Ft</p>
                   </div>
                 </div>
 
                 {listing.description && (
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{listing.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {listing.description}
+                  </p>
                 )}
 
                 <div className="flex gap-2">
@@ -228,9 +259,12 @@ export default function MarketplacePage() {
           <div className="space-y-4 pt-4">
             {selectedListing && (
               <div className="bg-muted/50 rounded-lg p-3">
-                <p className="font-medium">{selectedListing.property?.address}</p>
+                <p className="font-medium">
+                  {selectedListing.property?.address}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedListing.property?.city}, {selectedListing.property?.state}
+                  {selectedListing.property?.city},{" "}
+                  {selectedListing.property?.state}
                 </p>
                 <p className="text-sm font-medium text-primary mt-2">
                   Asking: ${selectedListing.listPrice?.toLocaleString()}
@@ -259,10 +293,17 @@ export default function MarketplacePage() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOfferDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setOfferDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={submitOffer} disabled={!offerAmount} data-testid="button-submit-offer">
+              <Button
+                onClick={submitOffer}
+                disabled={!offerAmount}
+                data-testid="button-submit-offer"
+              >
                 Submit Offer
               </Button>
             </div>

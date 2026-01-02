@@ -1,3 +1,5 @@
+import https from "./http";
+
 export interface AttomPropertyData {
   address: {
     line1: string;
@@ -35,7 +37,7 @@ export interface AttomPropertyData {
   };
   sale?: {
     amount?: {
-      saleamt: number;
+      saleamt?: number;
     };
     saleTransDate?: string;
   };
@@ -120,25 +122,33 @@ export interface AttomApiResponse {
   }>;
 }
 
-export async function searchProperty(address: string): Promise<AttomPropertyData | null> {
+export async function searchProperty(
+  address: string
+): Promise<AttomPropertyData | null> {
   try {
-    const response = await fetch(`/api/property/search?address=${encodeURIComponent(address)}`);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
+    const response = await https.get<AttomApiResponse>(
+      `/property/search?address=${encodeURIComponent(address)}`,
+      {
+        validateStatus: (status) => status < 500, // Handle 404 manually
       }
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (response.status !== 200) {
       throw new Error("Failed to fetch property data");
     }
 
-    const data: AttomApiResponse = await response.json();
-    
+    const data = response.data;
+
     if (!data.property || data.property.length === 0) {
       return null;
     }
 
     const prop = data.property[0];
-    
+
     return {
       address: {
         line1: prop.address.line1 || "",
@@ -164,20 +174,28 @@ export async function searchProperty(address: string): Promise<AttomPropertyData
       },
       assessment: {
         assessed: {
-          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || prop.assessment?.assessed?.assdTtlValue || 0,
+          assdTotalValue:
+            prop.assessment?.assessed?.assdTotalValue ||
+            prop.assessment?.assessed?.assdTtlValue ||
+            0,
         },
         market: {
-          mktTotalValue: prop.assessment?.market?.mktTotalValue || prop.assessment?.market?.mktTtlValue || 0,
+          mktTotalValue:
+            prop.assessment?.market?.mktTotalValue ||
+            prop.assessment?.market?.mktTtlValue ||
+            0,
         },
       },
       lot: {
         lotSize1: prop.lot?.lotSize1,
         lotSize2: prop.lot?.lotSize2,
       },
-      sale: prop.sale ? {
-        amount: prop.sale.amount,
-        saleTransDate: prop.sale.saleTransDate,
-      } : undefined,
+      sale: prop.sale
+        ? {
+            amount: prop.sale.amount,
+            saleTransDate: prop.sale.saleTransDate,
+          }
+        : undefined,
     };
   } catch (error) {
     console.error("Error searching property:", error);
@@ -196,24 +214,20 @@ export async function searchPropertiesByRadius(
   }
 ): Promise<AttomPropertyData[]> {
   try {
-    let url = `/api/property/radius?lat=${lat}&lng=${lng}&radius=${radius}`;
+    let url = `/property/radius?lat=${lat}&lng=${lng}&radius=${radius}`;
     if (filters?.minbeds) url += `&minbeds=${filters.minbeds}`;
     if (filters?.maxbeds) url += `&maxbeds=${filters.maxbeds}`;
     if (filters?.propertytype) url += `&propertytype=${filters.propertytype}`;
 
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error("Failed to fetch properties");
-    }
+    const response = await https.get<AttomApiResponse>(url);
 
-    const data: AttomApiResponse = await response.json();
-    
+    const data = response.data;
+
     if (!data.property || data.property.length === 0) {
       return [];
     }
 
-    return data.property.map(prop => ({
+    return data.property.map((prop) => ({
       address: {
         line1: prop.address.line1 || "",
         line2: prop.address.line2 || "",
@@ -238,20 +252,28 @@ export async function searchPropertiesByRadius(
       },
       assessment: {
         assessed: {
-          assdTotalValue: prop.assessment?.assessed?.assdTotalValue || prop.assessment?.assessed?.assdTtlValue || 0,
+          assdTotalValue:
+            prop.assessment?.assessed?.assdTotalValue ||
+            prop.assessment?.assessed?.assdTtlValue ||
+            0,
         },
         market: {
-          mktTotalValue: prop.assessment?.market?.mktTotalValue || prop.assessment?.market?.mktTtlValue || 0,
+          mktTotalValue:
+            prop.assessment?.market?.mktTotalValue ||
+            prop.assessment?.market?.mktTtlValue ||
+            0,
         },
       },
       lot: {
         lotSize1: prop.lot?.lotSize1,
         lotSize2: prop.lot?.lotSize2,
       },
-      sale: prop.sale ? {
-        amount: prop.sale.amount,
-        saleTransDate: prop.sale.saleTransDate,
-      } : undefined,
+      sale: prop.sale
+        ? {
+            amount: prop.sale.amount,
+            saleTransDate: prop.sale.saleTransDate,
+          }
+        : undefined,
     }));
   } catch (error) {
     console.error("Error searching properties by radius:", error);

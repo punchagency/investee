@@ -1,146 +1,121 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { ArrowRight, ArrowLeft, Upload, Check, Calendar, Building2, Star, ShieldCheck, Clock, Search, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Home,
+  Wrench,
+  DollarSign,
+  TrendingUp,
+  FileText,
+  Share2,
+  Save,
+  Check,
+  Building2,
+  Star,
+  ShieldCheck,
+  Clock,
+  Search,
+  Loader2,
+  ChevronUp,
+  Send,
+  X,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { searchProperty, type AttomPropertyData } from "@/services/attom";
+import { createApplication } from "@/services/ApplicationServices";
 
 export default function Calculator() {
-  const [step, setStep] = useState(1);
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [files, setFiles] = useState<string[]>([]);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+
   const [formData, setFormData] = useState({
-    loanType: "DSCR",
-    propertyType: "single-family",
-    address: "",
-    purchasePrice: 300000,
-    estimatedValue: 300000,
-    downPayment: 60000,
-    creditScore: "700-739",
-    // DSCR specific fields
-    monthlyRent: 2500,
-    annualTaxes: 4000,
-    annualInsurance: 1500,
-    monthlyHOA: 0,
-    vacancyRate: 5,
-    maintenanceRate: 5,
+    // Property info
+    address: "123 Maple Avenue",
+    propertyType: "Single Family",
+    sqft: "2,400",
+    status: "Under Contract",
+
+    // Acquisition
+    purchasePrice: 350000,
+    closingCosts: 12500,
+    downPaymentPercent: 20,
     interestRate: 7.5,
-    loanTermYears: 30,
-    // Fix & Flip specific fields
-    arv: 400000,
-    rehabCosts: 50000,
-    holdingPeriodMonths: 6,
-    flipInterestRate: 12,
-    sellingCostsPercent: 8,
+
+    // Renovation & Hold
+    repairBudget: 65000,
+    contingencyPercent: 10,
+    durationMonths: 6,
+    monthlyCosts: 1200,
+
+    // Exit Strategy
+    arv: 585000,
+    agentCommissionPercent: 5.0,
+    sellingClosingPercent: 2.0,
+    sellingExpenses: 2500,
+
+    // Notes
+    notes: "",
+
+    // Application fields
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    creditScore: "700-739",
     preferredContact: "email",
-    agreeMarketing: false,
     agreeTerms: false,
-    preferredCallTime: "morning",
+    agreeMarketing: false,
+
+    // ATTOM data
     attomData: null as AttomPropertyData | null,
   });
 
-  // DSCR Calculation Logic
-  const calculateDSCR = () => {
-    const loanAmount = formData.purchasePrice - formData.downPayment;
-    const monthlyRate = formData.interestRate / 100 / 12;
-    const numPayments = formData.loanTermYears * 12;
-    
-    // Monthly P&I Payment (standard mortgage formula)
-    const monthlyPI = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
-    const annualDebtService = monthlyPI * 12;
-    
-    // Gross Annual Income
-    const grossAnnualRent = formData.monthlyRent * 12;
-    
-    // Operating Expenses
-    const vacancyLoss = grossAnnualRent * (formData.vacancyRate / 100);
-    const maintenance = grossAnnualRent * (formData.maintenanceRate / 100);
-    const totalOperatingExpenses = formData.annualTaxes + formData.annualInsurance + (formData.monthlyHOA * 12) + vacancyLoss + maintenance;
-    
-    // Net Operating Income
-    const noi = grossAnnualRent - totalOperatingExpenses;
-    
-    // DSCR Ratio
-    const dscr = noi / annualDebtService;
-    
-    return {
-      loanAmount,
-      monthlyPI: Math.round(monthlyPI),
-      annualDebtService: Math.round(annualDebtService),
-      grossAnnualRent,
-      totalOperatingExpenses: Math.round(totalOperatingExpenses),
-      noi: Math.round(noi),
-      dscr: dscr.toFixed(2),
-      dscrPasses: dscr >= 1.0,
-      dscrStrong: dscr >= 1.25,
-    };
-  };
-
-  const dscrResults = calculateDSCR();
-
-  // Fix & Flip Calculation Logic
-  const calculateFixFlip = () => {
-    const totalProjectCost = formData.purchasePrice + formData.rehabCosts;
-    const loanAmount = formData.purchasePrice - formData.downPayment;
-    
-    // Loan-to-Cost (LTC) ratio
-    const ltc = (loanAmount / totalProjectCost) * 100;
-    
-    // Loan-to-ARV ratio
-    const ltArv = (loanAmount / formData.arv) * 100;
-    
-    // Monthly holding costs (interest-only during rehab)
-    const monthlyInterest = loanAmount * (formData.flipInterestRate / 100 / 12);
-    const totalHoldingCosts = monthlyInterest * formData.holdingPeriodMonths;
-    
-    // Selling costs (commissions, closing costs, etc.)
-    const sellingCosts = formData.arv * (formData.sellingCostsPercent / 100);
-    
-    // Expected profit calculation
-    const totalInvestment = formData.purchasePrice + formData.rehabCosts + totalHoldingCosts + sellingCosts;
-    const expectedProfit = formData.arv - totalInvestment;
-    const roi = (expectedProfit / (formData.downPayment + formData.rehabCosts)) * 100;
-    
-    // Check if deal meets typical lender requirements
-    const ltcPasses = ltc <= 90; // Most lenders max at 90% LTC
-    const ltArvPasses = ltArv <= 75; // Most lenders max at 70-75% LTV on ARV
-    const dealIsStrong = ltc <= 80 && ltArv <= 70 && expectedProfit > 0;
-    
-    return {
-      loanAmount,
-      totalProjectCost,
-      ltc: ltc.toFixed(1),
-      ltArv: ltArv.toFixed(1),
-      monthlyInterest: Math.round(monthlyInterest),
-      totalHoldingCosts: Math.round(totalHoldingCosts),
-      sellingCosts: Math.round(sellingCosts),
-      expectedProfit: Math.round(expectedProfit),
-      roi: roi.toFixed(1),
-      ltcPasses,
-      ltArvPasses,
-      dealIsStrong,
-    };
-  };
-
-  const flipResults = calculateFixFlip();
-
-  const progress = (step / 8) * 100;
-
   const updateField = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Calculate derived values
+  const loanAmount =
+    formData.purchasePrice * (1 - formData.downPaymentPercent / 100);
+  const cashToClose =
+    formData.purchasePrice * (formData.downPaymentPercent / 100) +
+    formData.closingCosts;
+
+  const totalRenovation =
+    formData.repairBudget * (1 + formData.contingencyPercent / 100);
+  const totalHoldingCosts =
+    formData.monthlyCosts * formData.durationMonths +
+    loanAmount * (formData.interestRate / 100 / 12) * formData.durationMonths;
+
+  const commissions = formData.arv * (formData.agentCommissionPercent / 100);
+  const sellingClosingCosts =
+    formData.arv * (formData.sellingClosingPercent / 100);
+  const totalSellingCosts =
+    commissions + sellingClosingCosts + formData.sellingExpenses;
+
+  const totalInvestment =
+    formData.purchasePrice +
+    formData.closingCosts +
+    totalRenovation +
+    totalHoldingCosts +
+    totalSellingCosts;
+  const netProfit = formData.arv - totalInvestment;
+  const profitMargin = (netProfit / formData.arv) * 100;
+  const roi = (netProfit / cashToClose) * 100;
+  const cashOnCash = (netProfit / (cashToClose + formData.repairBudget)) * 100;
 
   const handlePropertySearch = async () => {
     if (!formData.address) {
@@ -152,13 +127,15 @@ export default function Calculator() {
     try {
       const data = await searchProperty(formData.address);
       if (data) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           attomData: data,
-          propertyType: data.summary.propClass === "Residential" ? "single-family" : "commercial",
-          estimatedValue: data.assessment.market.mktTotalValue,
-          purchasePrice: data.assessment.market.mktTotalValue, // Default to market value
-          downPayment: Math.round(data.assessment.market.mktTotalValue * 0.2), // Default 20% down
+          propertyType:
+            data.summary.propClass === "Residential"
+              ? "Single Family"
+              : "Commercial",
+          purchasePrice: data.assessment.market.mktTotalValue,
+          sqft: data.building.size.bldgSize?.toLocaleString() || "N/A",
         }));
         toast.success("Property found!", {
           description: `Verified data for ${data.address.line1}`,
@@ -173,48 +150,23 @@ export default function Calculator() {
     }
   };
 
-  const handleNext = () => {
-    if (step === 8) {
-      if (formData.firstName === "") {
-        toast.error("Please enter your first name");
-        return;
-      }
-      if (formData.email === "") {
-        toast.error("Please enter your email");
-        return;
-      }
-      if (!formData.agreeTerms) {
-        toast.error("Please agree to the terms and conditions");
-        return;
-      }
+  const handleSubmitApplication = async () => {
+    if (!formData.firstName || !formData.email) {
+      toast.error("Please fill in required fields");
+      return;
     }
-    if (step < 8) setStep(step + 1);
-  };
-
-  const handlePrev = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFiles([...files, file.name]);
-      toast.success(`Document uploaded: ${file.name}`, {
-        description: "Your document is ready for submission",
-      });
+    if (!formData.agreeTerms) {
+      toast.error("Please agree to the terms and conditions");
+      return;
     }
-  };
 
-  const handleSubmit = async () => {
-    const loanAmount = formData.purchasePrice - formData.downPayment;
-    
     const applicationData = {
-      loanType: formData.loanType,
+      loanType: "Fix & Flip",
       propertyType: formData.propertyType,
       address: formData.address,
       purchasePrice: formData.purchasePrice,
-      estimatedValue: formData.estimatedValue,
-      downPayment: formData.downPayment,
+      estimatedValue: formData.arv,
+      downPayment: cashToClose,
       loanAmount,
       creditScore: formData.creditScore,
       status: "submitted",
@@ -223,634 +175,898 @@ export default function Calculator() {
       email: formData.email,
       phone: formData.phone || "",
       preferredContact: formData.preferredContact,
-      preferredCallTime: formData.preferredCallTime,
       agreeMarketing: formData.agreeMarketing ? "yes" : "no",
-      documents: files,
       attomData: formData.attomData,
+      // Deal specific data
+      repairBudget: formData.repairBudget,
+      arv: formData.arv,
+      expectedProfit: netProfit,
+      roi: roi.toFixed(1),
     };
 
     try {
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(applicationData),
-      });
+      const response = await createApplication(applicationData);
 
-      if (!response.ok) {
-        throw new Error("Failed to submit application");
+      if (response.status === 201 || response.status === 200) {
+        toast.success("Application submitted!", {
+          description: "We'll match you with lenders shortly.",
+        });
+        setShowApplyModal(false);
+        setShowResults(true);
+      } else {
+        throw new Error(
+          `Failed to submit application with status: ${response.status}`
+        );
       }
-
-      toast.success("Request submitted successfully!", {
-        description: `We found 3 lender matches for your deal. Confirmation email sent to ${formData.email}`,
-      });
-
-      setShowResults(true);
     } catch (error) {
       console.error("Error submitting application:", error);
-      toast.error("Failed to submit application", {
-        description: "Please try again later",
-      });
+      toast.error("Failed to submit application");
     }
   };
 
-  const loanAmount = formData.purchasePrice - formData.downPayment;
-  const ltv = ((loanAmount / formData.purchasePrice) * 100).toFixed(1);
-
   if (showResults) {
     return (
-      <div className="container max-w-4xl px-4 md:px-8 py-12 min-h-screen">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="space-y-8"
-        >
-          <div className="text-center space-y-4">
+      <div className="min-h-screen bg-slate-50 py-12 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center space-y-4"
+          >
             <div className="mx-auto w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
               <Check className="w-8 h-8" />
             </div>
-            <h1 className="text-4xl font-heading font-bold">Matches Found!</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Based on your scenario, we've matched you with 3 lenders.
-              <br />
-              <span className="text-sm text-muted-foreground/80">Your application has been sent to these partners.</span>
+            <h1 className="text-4xl font-bold">Matches Found!</h1>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Based on your deal analysis, we've matched you with 3 lenders.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid gap-6">
-            {/* Best Match - Legacy Biz Capital */}
-            <Card className="border-2 border-primary/20 shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
+            {/* Best Match */}
+            <div className="bg-white border-2 border-primary/20 rounded-xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
                 BEST MATCH
               </div>
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Building2 className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold flex items-center gap-2">
-                        Legacy Biz Capital
-                        <Badge variant="secondary" className="text-xs font-normal bg-blue-100 text-blue-700">
-                          Featured Partner
-                        </Badge>
-                      </h3>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.9/5
-                        </Badge>
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> 14 Day Close
-                        </Badge>
-                      </div>
-                    </div>
+              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <Building2 className="w-8 h-8 text-primary" />
                   </div>
-
-                  <div className="flex flex-col sm:flex-row gap-8 w-full md:w-auto">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Est. Rate</p>
-                      <p className="text-2xl font-bold text-primary">6.5% - 7.25%</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Max LTV</p>
-                      <p className="text-2xl font-bold">Up to 80%</p>
+                  <div>
+                    <h3 className="text-2xl font-bold flex items-center gap-2">
+                      Legacy Biz Capital
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-normal bg-blue-100 text-blue-700"
+                      >
+                        Featured Partner
+                      </Badge>
+                    </h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />{" "}
+                        4.9/5
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Clock className="w-3 h-3" /> 14 Day Close
+                      </Badge>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-6 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center">
-                  <p className="text-sm text-muted-foreground">
-                    <ShieldCheck className="w-4 h-4 inline mr-1 text-green-600" />
-                    Pre-qualified based on your credit score of {formData.creditScore}
-                  </p>
-                  <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                    View Term Sheet
-                  </Button>
+                <div className="flex flex-col sm:flex-row gap-8 w-full md:w-auto">
+                  <div>
+                    <p className="text-sm text-slate-500">Est. Rate</p>
+                    <p className="text-2xl font-bold text-primary">10% - 12%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500">Max LTC</p>
+                    <p className="text-2xl font-bold">90%</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="mt-6 pt-6 border-t flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <p className="text-sm text-slate-500">
+                  <ShieldCheck className="w-4 h-4 inline mr-1 text-green-600" />
+                  Pre-qualified for $
+                  {netProfit > 0
+                    ? Math.round(netProfit).toLocaleString()
+                    : "N/A"}{" "}
+                  profit deal
+                </p>
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+                >
+                  View Term Sheet
+                </Button>
+              </div>
+            </div>
 
             {/* Other Matches */}
             {[
-              { name: "Premier Capital Group", rate: "7.0% - 7.75%", ltv: "75%", time: "21 Days" },
-              { name: "Rapid Funders LLC", rate: "7.25% - 8.5%", ltv: "70%", time: "10 Days" },
+              {
+                name: "Rapid Flip Funding",
+                rate: "11% - 13%",
+                ltc: "85%",
+                time: "10 Days",
+              },
+              {
+                name: "Hard Money Direct",
+                rate: "12% - 14%",
+                ltc: "80%",
+                time: "7 Days",
+              },
             ].map((lender, i) => (
-              <Card key={i} className="hover:border-primary/50 transition-colors">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-muted p-3 rounded-lg">
-                        <Building2 className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold">{lender.name}</h3>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs font-normal">
-                            <Clock className="w-3 h-3 mr-1" /> {lender.time}
-                          </Badge>
-                        </div>
-                      </div>
+              <div
+                key={i}
+                className="bg-white border border-slate-200 rounded-xl p-6 hover:border-primary/50 transition-colors"
+              >
+                <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-slate-100 p-3 rounded-lg">
+                      <Building2 className="w-6 h-6 text-slate-600" />
                     </div>
-
-                    <div className="flex gap-8">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Est. Rate</p>
-                        <p className="text-xl font-bold">{lender.rate}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Max LTV</p>
-                        <p className="text-xl font-bold">{lender.ltv}</p>
-                      </div>
+                    <div>
+                      <h3 className="text-xl font-bold">{lender.name}</h3>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-normal mt-1"
+                      >
+                        <Clock className="w-3 h-3 mr-1" /> {lender.time}
+                      </Badge>
                     </div>
-
-                    <Button variant="outline" className="w-full md:w-auto">View Details</Button>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex gap-8">
+                    <div>
+                      <p className="text-sm text-slate-500">Est. Rate</p>
+                      <p className="text-xl font-bold">{lender.rate}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Max LTC</p>
+                      <p className="text-xl font-bold">{lender.ltc}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full md:w-auto">
+                    View Details
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
 
           <div className="flex justify-center pt-8">
-            <Button variant="ghost" onClick={() => { setShowResults(false); setStep(1); }} className="text-muted-foreground">
-              Start New Request
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowResults(false);
+              }}
+              className="text-slate-500"
+            >
+              Back to Calculator
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container max-w-2xl px-4 md:px-8 py-12 min-h-screen">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
-        <div>
-          <h1 className="text-4xl font-heading font-bold mb-2">Request Loan Offers</h1>
-          <p className="text-muted-foreground text-lg">One application. Multiple quotes. 8 simple steps.</p>
-        </div>
-
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">Step {step} of 8</span>
-            <span className="text-muted-foreground">{progress.toFixed(0)}% Complete</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
-        {/* Form Cards */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">
-              {step === 1 && "What type of financing do you need?"}
-              {step === 2 && "Tell us about the property"}
-              {step === 3 && "What's your investment amount?"}
-              {step === 4 && (formData.loanType === "DSCR" ? "Rental Income & Expenses" : formData.loanType === "Fix & Flip" ? "Rehab & ARV Details" : "Credit profile")}
-              {step === 5 && "Credit profile"}
-              {step === 6 && (formData.loanType === "DSCR" ? "Review your DSCR scenario" : formData.loanType === "Fix & Flip" ? "Review your Fix & Flip deal" : "Review your loan scenario")}
-              {step === 7 && "Upload documents"}
-              {step === 8 && "Contact information"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Step 1: Loan Type */}
-            {step === 1 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <Label className="text-base font-semibold">Loan Type</Label>
-                <div className="space-y-3">
-                  {[
-                    { value: "DSCR", label: "DSCR Rental - For investment properties generating rental income", desc: "Best for buy & hold investors" },
-                    { value: "Fix & Flip", label: "Fix & Flip - For renovation and resale projects", desc: "Best for active flippers" },
-                    { value: "Portfolio", label: "Portfolio Loan - For multiple properties", desc: "Best for scaling investors" },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateField("loanType", option.value)}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                        formData.loanType === option.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <p className="font-semibold">{option.label}</p>
-                      <p className="text-sm text-muted-foreground">{option.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 2: Property Type & Search */}
-            {step === 2 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Property Address</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="e.g. 123 Main St, Austin, TX" 
-                      value={formData.address}
-                      onChange={(e) => updateField("address", e.target.value)}
-                    />
-                    <Button onClick={handlePropertySearch} disabled={isSearching}>
-                      {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Search powered by ATTOM Data Solutions
-                  </p>
-                </div>
-
-                {formData.attomData && (
-                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                     <div className="flex items-start gap-3">
-                       <Check className="w-5 h-5 text-blue-600 mt-0.5" />
-                       <div>
-                         <p className="font-semibold text-blue-900">Verified Property Data Found</p>
-                         <p className="text-sm text-blue-700">
-                           {formData.attomData.summary.propClass} • Built {formData.attomData.summary.yearBuilt} • {formData.attomData.building.rooms.beds} Beds / {formData.attomData.building.rooms.bathsTotal} Baths
-                         </p>
-                         <p className="text-sm text-blue-700 font-medium mt-1">
-                           Est. Market Value: ${formData.attomData.assessment.market.mktTotalValue.toLocaleString()}
-                         </p>
-                       </div>
-                     </div>
-                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Property Type</Label>
-                  <Select value={formData.propertyType} onValueChange={(v) => updateField("propertyType", v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single-family">Single Family Home</SelectItem>
-                      <SelectItem value="multi-family">Multi-Family (2-4 units)</SelectItem>
-                      <SelectItem value="apartment">Apartment Building</SelectItem>
-                      <SelectItem value="commercial">Commercial Property</SelectItem>
-                      <SelectItem value="mixed-use">Mixed Use</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 3: Investment Amount */}
-            {step === 3 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div>
-                  <Label>Purchase Price: ${formData.purchasePrice.toLocaleString()}</Label>
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-white">
+      {/* Main Calculator Section */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 p-6 sticky top-0 z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 max-w-5xl mx-auto">
+            <div className="flex items-center gap-4">
+              <div
+                className="h-16 w-16 rounded-lg bg-cover bg-center shrink-0 border border-slate-200 shadow-sm"
+                style={{
+                  backgroundImage: `url('https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&q=80')`,
+                }}
+              ></div>
+              <div>
+                <div className="flex items-center gap-2">
                   <Input
-                    type="range"
-                    min="50000"
-                    max="2000000"
-                    step="10000"
-                    value={formData.purchasePrice}
-                    onChange={(e) => updateField("purchasePrice", parseInt(e.target.value))}
-                    className="mt-2"
+                    value={formData.address}
+                    onChange={(e) => updateField("address", e.target.value)}
+                    className="text-xl font-bold border-none p-0 h-auto focus-visible:ring-0 bg-transparent"
                   />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handlePropertySearch}
+                    disabled={isSearching}
+                  >
+                    {isSearching ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
+                <p className="text-slate-500 text-sm mt-0.5">
+                  Springfield, IL • {formData.propertyType} • {formData.sqft}{" "}
+                  sqft
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Badge className="bg-blue-50 text-blue-600 border-blue-100">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+                {formData.status}
+              </Badge>
+              <Button variant="outline" size="sm" className="shadow-sm">
+                <Share2 className="h-4 w-4 mr-2" /> Share
+              </Button>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 shadow-sm"
+              >
+                <Save className="h-4 w-4 mr-2" /> Save Deal
+              </Button>
+            </div>
+          </div>
+        </div>
 
+        {/* Calculator Form */}
+        <div className="flex-1 overflow-y-auto p-6 pb-24 lg:pb-6">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {/* Acquisition Section */}
+            <section className="flex flex-col gap-5">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="bg-primary/10 p-1.5 rounded-md text-primary">
+                  <Home className="h-5 w-5" />
+                </div>
+                <h3 className="text-slate-900 font-semibold text-lg">
+                  Acquisition
+                </h3>
+              </div>
+              <div className="space-y-4">
                 <div>
-                  <Label>Down Payment: ${formData.downPayment.toLocaleString()} ({((formData.downPayment / formData.purchasePrice) * 100).toFixed(0)}%)</Label>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    Purchase Price
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      value={formData.purchasePrice}
+                      onChange={(e) =>
+                        updateField(
+                          "purchasePrice",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    Closing Costs
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      value={formData.closingCosts}
+                      onChange={(e) =>
+                        updateField(
+                          "closingCosts",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Down Payment %
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={formData.downPaymentPercent}
+                        onChange={(e) =>
+                          updateField(
+                            "downPaymentPercent",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="pr-8 tabular-nums"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Interest Rate
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={formData.interestRate}
+                        onChange={(e) =>
+                          updateField(
+                            "interestRate",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="pr-8 tabular-nums"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="flex justify-between items-center text-sm mb-2">
+                    <span className="text-slate-500">Loan Amount</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(loanAmount).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Cash to Close</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(cashToClose).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Renovation & Hold Section */}
+            <section className="flex flex-col gap-5">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="bg-primary/10 p-1.5 rounded-md text-primary">
+                  <Wrench className="h-5 w-5" />
+                </div>
+                <h3 className="text-slate-900 font-semibold text-lg">
+                  Renovation & Hold
+                </h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    Repair Budget
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      value={formData.repairBudget}
+                      onChange={(e) =>
+                        updateField(
+                          "repairBudget",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    Contingency: {formData.contingencyPercent}%
+                  </Label>
                   <Input
                     type="range"
                     min="0"
-                    max={formData.purchasePrice * 0.5}
-                    step="5000"
-                    value={formData.downPayment}
-                    onChange={(e) => updateField("downPayment", parseInt(e.target.value))}
-                    className="mt-2"
+                    max="25"
+                    value={formData.contingencyPercent}
+                    onChange={(e) =>
+                      updateField(
+                        "contingencyPercent",
+                        parseInt(e.target.value)
+                      )
+                    }
+                    className="w-full accent-primary"
                   />
                 </div>
-
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-6">
-                  <p className="text-sm text-muted-foreground">Estimated Loan Amount</p>
-                  <p className="text-3xl font-bold text-primary">${loanAmount.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground mt-1">LTV: {ltv}%</p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 4: DSCR Rental Income & Expenses */}
-            {step === 4 && formData.loanType === "DSCR" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label className="text-base font-semibold">Monthly Rental Income</Label>
-                    <Input
-                      type="number"
-                      value={formData.monthlyRent}
-                      onChange={(e) => updateField("monthlyRent", parseInt(e.target.value) || 0)}
-                      className="mt-2 text-lg"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Expected or actual monthly rent</p>
-                  </div>
-                  
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Annual Property Taxes</Label>
-                    <Input
-                      type="number"
-                      value={formData.annualTaxes}
-                      onChange={(e) => updateField("annualTaxes", parseInt(e.target.value) || 0)}
-                      className="mt-2"
-                    />
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Duration
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={formData.durationMonths}
+                        onChange={(e) =>
+                          updateField(
+                            "durationMonths",
+                            parseInt(e.target.value) || 0
+                          )
+                        }
+                        className="pr-12 tabular-nums"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium uppercase">
+                        mos
+                      </span>
+                    </div>
                   </div>
                   <div>
-                    <Label>Annual Insurance</Label>
-                    <Input
-                      type="number"
-                      value={formData.annualInsurance}
-                      onChange={(e) => updateField("annualInsurance", parseInt(e.target.value) || 0)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label>Monthly HOA (if any)</Label>
-                    <Input
-                      type="number"
-                      value={formData.monthlyHOA}
-                      onChange={(e) => updateField("monthlyHOA", parseInt(e.target.value) || 0)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label>Interest Rate (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.125"
-                      value={formData.interestRate}
-                      onChange={(e) => updateField("interestRate", parseFloat(e.target.value) || 0)}
-                      className="mt-2"
-                    />
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Monthly Costs
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                        $
+                      </span>
+                      <Input
+                        type="number"
+                        value={formData.monthlyCosts}
+                        onChange={(e) =>
+                          updateField(
+                            "monthlyCosts",
+                            parseInt(e.target.value) || 0
+                          )
+                        }
+                        className="pl-7 tabular-nums"
+                      />
+                    </div>
                   </div>
                 </div>
-
-                <div className={`rounded-lg p-4 border-2 ${dscrResults.dscrStrong ? 'bg-green-50 border-green-200' : dscrResults.dscrPasses ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Your DSCR</span>
-                    <span className={`text-3xl font-bold ${dscrResults.dscrStrong ? 'text-green-600' : dscrResults.dscrPasses ? 'text-yellow-600' : 'text-red-600'}`}>
-                      {dscrResults.dscr}
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Total Renovation</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(totalRenovation).toLocaleString()}
                     </span>
                   </div>
-                  <p className={`text-sm ${dscrResults.dscrStrong ? 'text-green-700' : dscrResults.dscrPasses ? 'text-yellow-700' : 'text-red-700'}`}>
-                    {dscrResults.dscrStrong ? 'Strong qualification! Most lenders require 1.0+' : dscrResults.dscrPasses ? 'Meets minimum requirements (1.0+)' : 'Below 1.0 - may need higher down payment or rent'}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                    <div>NOI: ${dscrResults.noi.toLocaleString()}/yr</div>
-                    <div>Debt Service: ${dscrResults.annualDebtService.toLocaleString()}/yr</div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Total Holding Costs</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(totalHoldingCosts).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </section>
 
-            {/* Step 4: Fix & Flip Rehab & ARV Details */}
-            {step === 4 && formData.loanType === "Fix & Flip" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label className="text-base font-semibold">After Repair Value (ARV)</Label>
+            {/* Exit Strategy Section */}
+            <section className="flex flex-col gap-5">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="bg-primary/10 p-1.5 rounded-md text-primary">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+                <h3 className="text-slate-900 font-semibold text-lg">
+                  Exit Strategy
+                </h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    After Repair Value (ARV)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">
+                      $
+                    </span>
                     <Input
                       type="number"
                       value={formData.arv}
-                      onChange={(e) => updateField("arv", parseInt(e.target.value) || 0)}
-                      className="mt-2 text-lg"
+                      onChange={(e) =>
+                        updateField("arv", parseInt(e.target.value) || 0)
+                      }
+                      className="pl-7 tabular-nums font-bold border-l-4 border-l-primary"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Expected property value after renovation</p>
-                  </div>
-                  
-                  <div className="col-span-2">
-                    <Label className="text-base font-semibold">Rehab/Renovation Budget</Label>
-                    <Input
-                      type="number"
-                      value={formData.rehabCosts}
-                      onChange={(e) => updateField("rehabCosts", parseInt(e.target.value) || 0)}
-                      className="mt-2 text-lg"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Total cost of repairs and improvements</p>
-                  </div>
-
-                  <div>
-                    <Label>Holding Period (months)</Label>
-                    <Input
-                      type="number"
-                      value={formData.holdingPeriodMonths}
-                      onChange={(e) => updateField("holdingPeriodMonths", parseInt(e.target.value) || 0)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label>Interest Rate (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={formData.flipInterestRate}
-                      onChange={(e) => updateField("flipInterestRate", parseFloat(e.target.value) || 0)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Selling Costs (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={formData.sellingCostsPercent}
-                      onChange={(e) => updateField("sellingCostsPercent", parseFloat(e.target.value) || 0)}
-                      className="mt-2"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Agent commissions, closing costs, etc.</p>
                   </div>
                 </div>
-
-                <div className={`rounded-lg p-4 border-2 ${flipResults.dealIsStrong ? 'bg-green-50 border-green-200' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium">Expected Profit</span>
-                    <span className={`text-3xl font-bold ${flipResults.expectedProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${flipResults.expectedProfit.toLocaleString()}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Agent Comm.
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        step="0.5"
+                        value={formData.agentCommissionPercent}
+                        onChange={(e) =>
+                          updateField(
+                            "agentCommissionPercent",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="pr-8 tabular-nums"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                      Closing Costs
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        step="0.5"
+                        value={formData.sellingClosingPercent}
+                        onChange={(e) =>
+                          updateField(
+                            "sellingClosingPercent",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="pr-8 tabular-nums"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-slate-500 text-sm font-medium mb-1.5 block">
+                    Selling Expenses ($)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      value={formData.sellingExpenses}
+                      onChange={(e) =>
+                        updateField(
+                          "sellingExpenses",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className="pl-7 tabular-nums"
+                      placeholder="Staging, etc."
+                    />
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Commissions</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(commissions).toLocaleString()}
                     </span>
                   </div>
-                  <p className={`text-sm ${flipResults.dealIsStrong ? 'text-green-700' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'text-yellow-700' : 'text-red-700'}`}>
-                    {flipResults.dealIsStrong ? 'Strong deal! Meets lender requirements.' : flipResults.ltcPasses && flipResults.ltArvPasses ? 'Meets basic requirements.' : 'May need higher down payment or lower purchase price.'}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                    <div>LTC: {flipResults.ltc}% {parseFloat(flipResults.ltc) <= 90 ? '✓' : '⚠'}</div>
-                    <div>LTV (ARV): {flipResults.ltArv}% {parseFloat(flipResults.ltArv) <= 75 ? '✓' : '⚠'}</div>
-                    <div>Holding Costs: ${flipResults.totalHoldingCosts.toLocaleString()}</div>
-                    <div>ROI: {flipResults.roi}%</div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Total Selling Costs</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">
+                      ${Math.round(totalSellingCosts).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </section>
 
-            {/* Step 4: Credit Score (for non-DSCR, non-Fix&Flip) / Step 5: Credit Score */}
-            {((step === 4 && formData.loanType !== "DSCR" && formData.loanType !== "Fix & Flip") || step === 5) && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <Label className="text-base font-semibold">Credit Score Range</Label>
-                <div className="space-y-3">
-                  {[
-                    { value: "740+", label: "Excellent (740+)", color: "text-green-600" },
-                    { value: "700-739", label: "Good (700-739)", color: "text-blue-600" },
-                    { value: "660-699", label: "Average (660-699)", color: "text-yellow-600" },
-                    { value: "600-659", label: "Fair (600-659)", color: "text-orange-600" },
-                    { value: "<600", label: "Poor (<600)", color: "text-red-600" },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateField("creditScore", option.value)}
-                      className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                        formData.creditScore === option.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <span className={`font-semibold ${option.color}`}>{option.label}</span>
-                    </button>
-                  ))}
+            {/* Notes Section */}
+            <section className="col-span-1 md:col-span-2 xl:col-span-3 mt-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 mb-4">
+                <div className="bg-primary/10 p-1.5 rounded-md text-primary">
+                  <FileText className="h-5 w-5" />
                 </div>
-              </motion.div>
-            )}
+                <h3 className="text-slate-900 font-semibold text-lg">Notes</h3>
+              </div>
+              <textarea
+                className="w-full h-24 bg-white border border-slate-200 rounded-lg p-3 text-slate-900 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none placeholder-slate-400 shadow-sm"
+                placeholder="Add notes about specific neighborhood comps, contractor bids, or loan terms..."
+                value={formData.notes}
+                onChange={(e) => updateField("notes", e.target.value)}
+              ></textarea>
+            </section>
+          </div>
+        </div>
+      </div>
 
-            {/* Step 6: Review with DSCR Analysis */}
-            {step === 6 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className="bg-muted rounded-lg p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Loan Type</p>
-                      <p className="font-semibold text-lg">{formData.loanType}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Property Type</p>
-                      <p className="font-semibold text-lg">{formData.propertyType}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Purchase Price</p>
-                      <p className="font-semibold text-lg">${formData.purchasePrice.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Loan Amount</p>
-                      <p className="font-semibold text-lg text-primary">${loanAmount.toLocaleString()}</p>
-                    </div>
-                    {formData.loanType === "DSCR" && (
-                      <>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Monthly Rent</p>
-                          <p className="font-semibold text-lg">${formData.monthlyRent.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">DSCR Ratio</p>
-                          <p className={`font-semibold text-lg ${dscrResults.dscrStrong ? 'text-green-600' : dscrResults.dscrPasses ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {dscrResults.dscr}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Monthly P&I</p>
-                          <p className="font-semibold text-lg">${dscrResults.monthlyPI.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">NOI</p>
-                          <p className="font-semibold text-lg">${dscrResults.noi.toLocaleString()}/yr</p>
-                        </div>
-                      </>
-                    )}
-                    {formData.loanType === "Fix & Flip" && (
-                      <>
-                        <div>
-                          <p className="text-sm text-muted-foreground">ARV</p>
-                          <p className="font-semibold text-lg">${formData.arv.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Rehab Budget</p>
-                          <p className="font-semibold text-lg">${formData.rehabCosts.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">LTC</p>
-                          <p className={`font-semibold text-lg ${flipResults.ltcPasses ? 'text-green-600' : 'text-red-600'}`}>
-                            {flipResults.ltc}%
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">LTV (ARV)</p>
-                          <p className={`font-semibold text-lg ${flipResults.ltArvPasses ? 'text-green-600' : 'text-red-600'}`}>
-                            {flipResults.ltArv}%
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Holding Costs</p>
-                          <p className="font-semibold text-lg">${flipResults.totalHoldingCosts.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Expected Profit</p>
-                          <p className={`font-semibold text-lg ${flipResults.expectedProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            ${flipResults.expectedProfit.toLocaleString()}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <p className="text-sm text-muted-foreground">Credit Score</p>
-                      <p className="font-semibold text-lg">{formData.creditScore}</p>
-                    </div>
-                  </div>
+      {/* Deal Analysis Sidebar - Desktop */}
+      <aside className="hidden lg:flex w-80 xl:w-96 flex-col bg-slate-50 border-l border-slate-200 h-full overflow-y-auto">
+        <div className="p-6 flex flex-col h-full">
+          <h2 className="text-slate-900 text-xl font-bold mb-6 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Deal Analysis
+          </h2>
+
+          {/* Net Profit Card */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm text-center">
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              Estimated Net Profit
+            </p>
+            <h1
+              className={`text-4xl xl:text-5xl font-extrabold tabular-nums tracking-tight mb-3 ${
+                netProfit >= 0 ? "text-primary" : "text-red-500"
+              }`}
+            >
+              ${Math.round(netProfit).toLocaleString()}
+            </h1>
+            <div
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold border ${
+                profitMargin >= 15
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : profitMargin >= 10
+                  ? "bg-yellow-50 text-yellow-700 border-yellow-100"
+                  : "bg-red-50 text-red-700 border-red-100"
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              {profitMargin.toFixed(1)}% Margin
+            </div>
+          </div>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:border-primary/30 transition-colors">
+              <p className="text-slate-500 text-xs font-semibold uppercase mb-1">
+                ROI
+              </p>
+              <p className="text-slate-900 text-xl font-bold tabular-nums">
+                {roi.toFixed(1)}%
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:border-primary/30 transition-colors">
+              <p className="text-slate-500 text-xs font-semibold uppercase mb-1">
+                Cash on Cash
+              </p>
+              <p className="text-slate-900 text-xl font-bold tabular-nums">
+                {cashOnCash.toFixed(1)}%
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:border-primary/30 transition-colors">
+              <p className="text-slate-500 text-xs font-semibold uppercase mb-1">
+                Cap Rate
+              </p>
+              <p className="text-slate-400 text-xl font-bold tabular-nums">
+                N/A
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:border-primary/30 transition-colors">
+              <p className="text-slate-500 text-xs font-semibold uppercase mb-1">
+                Total Inv.
+              </p>
+              <p className="text-slate-900 text-xl font-bold tabular-nums">
+                ${Math.round(totalInvestment / 1000)}k
+              </p>
+            </div>
+          </div>
+
+          {/* Profit Distribution */}
+          <div className="flex-1">
+            <h3 className="text-slate-900 text-sm font-semibold mb-4">
+              Profit Distribution
+            </h3>
+            <div className="relative w-40 h-40 mx-auto mb-6">
+              <svg
+                className="w-full h-full transform -rotate-90"
+                viewBox="0 0 100 100"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  fill="transparent"
+                  r="40"
+                  stroke="#e2e8f0"
+                  strokeWidth="10"
+                ></circle>
+                <circle
+                  cx="50"
+                  cy="50"
+                  fill="transparent"
+                  r="40"
+                  stroke="#cbd5e1"
+                  strokeWidth="10"
+                  strokeDasharray="251"
+                  strokeDashoffset={
+                    251 -
+                    251 *
+                      ((formData.purchasePrice + formData.closingCosts) /
+                        formData.arv)
+                  }
+                ></circle>
+                <circle
+                  cx="50"
+                  cy="50"
+                  fill="transparent"
+                  r="40"
+                  stroke="#22c55e"
+                  strokeWidth="10"
+                  strokeDasharray="251"
+                  strokeDashoffset={251 - 251 * (netProfit / formData.arv)}
+                  strokeLinecap="round"
+                ></circle>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-xs text-slate-500 uppercase font-bold">
+                  ARV
+                </span>
+                <span className="text-slate-900 font-bold text-lg tabular-nums">
+                  ${Math.round(formData.arv / 1000)}k
+                </span>
+              </div>
+            </div>
+            <div className="space-y-3 px-2">
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+                  <span className="text-slate-500">Purchase & Close</span>
                 </div>
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Everything look good? Next, we'll need to collect some supporting documents.
-                </p>
-              </motion.div>
-            )}
-
-            {/* Step 7: Document Upload */}
-            {step === 7 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div>
-                  <Label className="text-base font-semibold mb-4 block">Upload Supporting Documents</Label>
-                  <p className="text-sm text-muted-foreground mb-4">Upload recent documents to speed up approval (2 of 3 recommended):</p>
-                  
-                  <div className="space-y-3">
-                    {[
-                      { name: "Tax Returns", desc: "Last 2 years" },
-                      { name: "Pay Stubs", desc: "Recent 30-60 days" },
-                      { name: "Bank Statements", desc: "Recent 2-3 months" },
-                      { name: "Property Purchase Contract", desc: "If under contract" },
-                    ].map((doc) => (
-                      <label key={doc.name} className="flex items-center gap-3 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                        <input type="file" className="hidden" onChange={handleFileUpload} />
-                        <Upload className="w-5 h-5 text-muted-foreground" />
-                        <div className="flex-1">
-                          <p className="font-medium">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.desc}</p>
-                        </div>
-                        {files.includes(doc.name) && <Check className="w-5 h-5 text-green-600" />}
-                      </label>
-                    ))}
-                  </div>
-
-                  {files.length > 0 && (
-                    <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-green-900">{files.length} document(s) ready to upload</p>
-                    </div>
+                <span className="text-slate-900 font-medium tabular-nums">
+                  $
+                  {Math.round(
+                    (formData.purchasePrice + formData.closingCosts) / 1000
                   )}
+                  k
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                  <span className="text-slate-500">Renovation</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  💡 Documents are kept secure and encrypted. We only use them to verify your income and creditworthiness.
-                </p>
-              </motion.div>
-            )}
+                <span className="text-slate-900 font-medium tabular-nums">
+                  ${Math.round(totalRenovation / 1000)}k
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-200"></span>
+                  <span className="text-slate-500">Hold & Sell</span>
+                </div>
+                <span className="text-slate-900 font-medium tabular-nums">
+                  ${Math.round((totalHoldingCosts + totalSellingCosts) / 1000)}k
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm mt-3 pt-3 border-t border-slate-200 font-bold">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary shadow-sm"></span>
+                  <span className="text-primary">Net Profit</span>
+                </div>
+                <span className="text-primary tabular-nums">
+                  ${Math.round(netProfit / 1000)}k
+                </span>
+              </div>
+            </div>
+          </div>
 
-            {/* Step 8: Contact Info & Lead Capture */}
-            {step === 8 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          {/* Action Buttons */}
+          <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col gap-3">
+            <Button
+              onClick={() => setShowApplyModal(true)}
+              className="w-full bg-primary hover:bg-primary/90 font-bold"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Apply for Financing
+            </Button>
+            <Button variant="outline" className="w-full">
+              <FileText className="h-4 w-4 mr-2" />
+              Export PDF Report
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Bottom Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 z-50 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div>
+          <p className="text-slate-500 text-xs uppercase font-bold tracking-wide">
+            Net Profit
+          </p>
+          <p
+            className={`text-2xl font-bold tabular-nums ${
+              netProfit >= 0 ? "text-primary" : "text-red-500"
+            }`}
+          >
+            ${Math.round(netProfit).toLocaleString()}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <div className="text-right mr-2 hidden sm:block">
+            <p className="text-slate-500 text-xs uppercase font-bold tracking-wide">
+              ROI
+            </p>
+            <p className="text-slate-900 text-lg font-bold tabular-nums">
+              {roi.toFixed(1)}%
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowApplyModal(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Apply
+          </Button>
+        </div>
+      </div>
+
+      {/* Apply for Financing Modal */}
+      <AnimatePresence>
+        {showApplyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowApplyModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    Apply for Financing
+                  </h2>
+                  <p className="text-slate-500 text-sm mt-1">
+                    Get matched with lenders for your $
+                    {Math.round(netProfit).toLocaleString()} profit deal
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowApplyModal(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Deal Summary */}
+                <div className="bg-slate-50 rounded-lg p-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Loan Amount</p>
+                    <p className="font-bold text-slate-900">
+                      ${Math.round(loanAmount).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">ARV</p>
+                    <p className="font-bold text-slate-900">
+                      ${formData.arv.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Rehab Budget</p>
+                    <p className="font-bold text-slate-900">
+                      ${formData.repairBudget.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Expected ROI</p>
+                    <p className="font-bold text-primary">{roi.toFixed(1)}%</p>
+                  </div>
+                </div>
+
+                {/* Contact Form */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>First Name</Label>
+                    <Label>First Name *</Label>
                     <Input
                       placeholder="John"
                       value={formData.firstName}
                       onChange={(e) => updateField("firstName", e.target.value)}
+                      className="mt-1"
                     />
                   </div>
                   <div>
@@ -859,17 +1075,19 @@ export default function Calculator() {
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={(e) => updateField("lastName", e.target.value)}
+                      className="mt-1"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label>Email Address</Label>
+                  <Label>Email Address *</Label>
                   <Input
                     type="email"
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={(e) => updateField("email", e.target.value)}
+                    className="mt-1"
                   />
                 </div>
 
@@ -880,106 +1098,85 @@ export default function Calculator() {
                     placeholder="(555) 123-4567"
                     value={formData.phone}
                     onChange={(e) => updateField("phone", e.target.value)}
+                    className="mt-1"
                   />
                 </div>
 
                 <div>
-                  <Label>Preferred Contact Method</Label>
-                  <Select value={formData.preferredContact} onValueChange={(v) => updateField("preferredContact", v)}>
-                    <SelectTrigger>
+                  <Label>Credit Score Range</Label>
+                  <Select
+                    value={formData.creditScore}
+                    onValueChange={(v) => updateField("creditScore", v)}
+                  >
+                    <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="phone">Phone Call</SelectItem>
-                      <SelectItem value="both">Both</SelectItem>
+                      <SelectItem value="740+">Excellent (740+)</SelectItem>
+                      <SelectItem value="700-739">Good (700-739)</SelectItem>
+                      <SelectItem value="660-699">Average (660-699)</SelectItem>
+                      <SelectItem value="600-659">Fair (600-659)</SelectItem>
+                      <SelectItem value="<600">Poor (&lt;600)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div>
-                  <Label>Best Time to Reach You</Label>
-                  <Select value={formData.preferredCallTime} onValueChange={(v) => updateField("preferredCallTime", v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="morning">Morning (8am - 12pm)</SelectItem>
-                      <SelectItem value="afternoon">Afternoon (12pm - 5pm)</SelectItem>
-                      <SelectItem value="evening">Evening (5pm - 8pm)</SelectItem>
-                      <SelectItem value="any">Any time</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3 bg-muted/40 p-4 rounded-lg">
+                <div className="space-y-3 bg-slate-50 p-4 rounded-lg">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="marketing"
                       checked={formData.agreeMarketing}
-                      onCheckedChange={(checked) => updateField("agreeMarketing", checked)}
+                      onCheckedChange={(checked) =>
+                        updateField("agreeMarketing", checked)
+                      }
                     />
-                    <label htmlFor="marketing" className="text-sm cursor-pointer leading-relaxed">
-                      I'd like to receive updates about loan products, market insights, and investment opportunities from Investee
+                    <label
+                      htmlFor="marketing"
+                      className="text-sm cursor-pointer leading-relaxed text-slate-600"
+                    >
+                      I'd like to receive updates about loan products and
+                      investment opportunities
                     </label>
                   </div>
-
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="terms"
                       checked={formData.agreeTerms}
-                      onCheckedChange={(checked) => updateField("agreeTerms", checked)}
+                      onCheckedChange={(checked) =>
+                        updateField("agreeTerms", checked)
+                      }
                     />
-                    <label htmlFor="terms" className="text-sm cursor-pointer leading-relaxed">
-                      I agree to the Terms of Service and acknowledge my information will be used to match me with lenders <span className="text-red-500">*</span>
+                    <label
+                      htmlFor="terms"
+                      className="text-sm cursor-pointer leading-relaxed text-slate-600"
+                    >
+                      I agree to the Terms of Service and acknowledge my
+                      information will be used to match me with lenders{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
+              </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-900">
-                    <Clock className="w-4 h-4 inline mr-2" />
-                    <span className="font-medium">What happens next?</span> We'll instantly match you with lenders who fit your criteria.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex gap-4 justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePrev}
-            disabled={step === 1}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-
-          {step === 8 ? (
-            <Button
-              size="lg"
-              onClick={handleSubmit}
-              className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
-            >
-              Get My Offers
-              <Check className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              onClick={handleNext}
-              className="bg-primary hover:bg-primary/90 text-white font-semibold flex items-center gap-2"
-            >
-              Next
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </motion.div>
+              <div className="p-6 border-t border-slate-200 flex gap-4">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowApplyModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                  onClick={handleSubmitApplication}
+                >
+                  Submit Application
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
